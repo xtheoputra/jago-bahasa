@@ -1,0 +1,43 @@
+{
+  "name": "Jago Bahasa — Belajar Bahasa Dunia",
+  "short_name": "Jago Bahasa",
+  "description": "Platform pembelajaran bahasa dunia: kosakata, flashcard interaktif, dan kuis dengan pelacakan progres. Bisa diinstal dan bekerja offline.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "background_color": "#0f1226",
+  "theme_color": "#6d5efc",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lanjutkan Belajar",
+      "short_name": "Lanjutkan",
+      "url": "./index.html#/home",
+      "description": "Lanjutkan pelajaran terakhir"
+    },
+    {
+      "name": "Katalog Bahasa",
+      "short_name": "Katalog",
+      "url": "./index.html#/courses",
+      "description": "Jelajahi semua bahasa"
+    }
+  ]
+}

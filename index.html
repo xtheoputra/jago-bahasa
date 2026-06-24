@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#6d5efc" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#6d5efc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Jago Bahasa — platform pembelajaran bahasa dunia. Kosakata, flashcard, dan kuis interaktif. Installable & offline." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Jago Bahasa" />
+  <title>Jago Bahasa — Belajar Bahasa Dunia</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Lewati ke konten</a>
+
+  <header class="appbar" id="appbar">
+    <div class="appbar__inner">
+      <a class="brand" href="#/home" aria-label="Jago Bahasa — Beranda">
+        <img class="brand__logo" src="icons/icon.svg" alt="" width="34" height="34" />
+        <span class="brand__name">Jago<span class="brand__accent">Bahasa</span></span>
+      </a>
+
+      <nav class="topnav" aria-label="Navigasi utama">
+        <a href="#/home" data-route-link="home"><span class="topnav__ico" aria-hidden="true">🏠</span><span data-i18n="nav.home">Beranda</span></a>
+        <a href="#/courses" data-route-link="courses"><span class="topnav__ico" aria-hidden="true">📚</span><span data-i18n="nav.courses">Bahasa</span></a>
+        <a href="#/progress" data-route-link="progress"><span class="topnav__ico" aria-hidden="true">📈</span><span data-i18n="nav.progress">Progres</span></a>
+        <a href="#/about" data-route-link="about"><span class="topnav__ico" aria-hidden="true">ℹ️</span><span data-i18n="nav.about">Tentang</span></a>
+      </nav>
+
+      <div class="appbar__actions">
+        <button class="iconbtn" id="uiLangBtn" aria-haspopup="listbox" aria-expanded="false" title="Bahasa antarmuka">
+          <span id="uiLangFlag" aria-hidden="true">🇮🇩</span>
+          <span class="iconbtn__label" id="uiLangCode">ID</span>
+        </button>
+        <button class="iconbtn" id="themeBtn" title="Ganti tema" aria-label="Ganti tema terang/gelap">
+          <span class="theme-ico theme-ico--dark" aria-hidden="true">🌙</span>
+          <span class="theme-ico theme-ico--light" aria-hidden="true">☀️</span>
+        </button>
+      </div>
+    </div>
+    <div class="ui-lang-menu" id="uiLangMenu" role="listbox" aria-label="Pilih bahasa antarmuka" hidden></div>
+  </header>
+
+  <main id="main" class="main" tabindex="-1"></main>
+
+  <nav class="bottomnav" aria-label="Navigasi bawah">
+    <a href="#/home" data-route-link="home"><span aria-hidden="true">🏠</span><span data-i18n="nav.home">Beranda</span></a>
+    <a href="#/courses" data-route-link="courses"><span aria-hidden="true">📚</span><span data-i18n="nav.courses">Bahasa</span></a>
+    <a href="#/progress" data-route-link="progress"><span aria-hidden="true">📈</span><span data-i18n="nav.progress">Progres</span></a>
+    <a href="#/about" data-route-link="about"><span aria-hidden="true">ℹ️</span><span data-i18n="nav.about">Tentang</span></a>
+  </nav>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <button class="install-fab" id="installBtn" hidden>
+    <span aria-hidden="true">⬇️</span> <span data-i18n="install.cta">Pasang Aplikasi</span>
+  </button>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

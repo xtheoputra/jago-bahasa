@@ -1,0 +1,12 @@
+{
+  "name": "jago-bahasa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jago Bahasa — Progressive Web App untuk media pembelajaran bahasa dunia.",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "node server.js"
+  },
+  "keywords": ["pwa", "language-learning", "education", "offline"],
+  "license": "MIT"
+}

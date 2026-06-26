@@ -70,4 +70,28 @@ Jago Bahasa/
 
 ---
 
-*Dirangkum oleh Claude Code — 2026-06-24.*
+---
+
+## Pembaruan v2.0 — Akun, Keamanan & Refactor (2026-06-26)
+
+Permintaan pengguna: *"lengkapi website ini menjadi website internasional, lancar, clean code, dengan keamanan, otorisasi user password login dan register, professional."*
+
+Pendekatan yang dipilih: **hybrid auth** (tetap jalan di GitHub Pages, plus backend opsional).
+
+### Yang ditambahkan
+- **Autentikasi hybrid**:
+  - *Mode lokal* (GitHub Pages): daftar/masuk di browser, sandi di-hash **PBKDF2-HMAC-SHA256 (600k iterasi)** via Web Crypto, disimpan di **IndexedDB**. Sesi dengan kedaluwarsa + "tetap masuk".
+  - *Mode cloud* (backend opsional): **scrypt**, sesi **cookie httpOnly/Secure/SameSite**, **CSRF double-submit**, **rate-limit**, **header keamanan/CSP**, store JSON atomik. Frontend memilih provider via probe `GET /api/health`.
+- **Halaman akun**: ubah profil, ganti sandi (mencabut sesi perangkat lain), ekspor/impor data, hapus akun, indikator sinkronisasi.
+- **Progres per-akun** (namespaced) + merge progres tamu → akun sekali saat sign-in.
+- **Refactor clean-code**: `app.js` (IIFE 785 baris) dipecah menjadi ES modules (`core/`, `auth/`, `views/`, `chrome.js`, `pwa.js`). Shuffle kuis diperbaiki → Fisher–Yates kriptografis.
+- **Keamanan**: CSP + framebuster (hash), path-traversal & blokir `data/`/`server/`, batas ukuran body, escaping XSS menyeluruh, anti-enumerasi login.
+- **Internasional**: 8 → **12 bahasa** (+ Italia, Portugis, Rusia, Hindi). Ikon **PNG asli** (180/192/512 + maskable) untuk iOS.
+- **PWA**: SW v2 (precache modul, `/api` network-only, fallback aset 404 bukan HTML), prompt update.
+
+### Proses
+Dibangun dengan orkestrasi multi-agen (ultracode): workflow **desain/analisis-risiko** (4 lensa) → implementasi → workflow **review adversarial** (4 dimensi, find→verify) yang mengonfirmasi 16 temuan; semuanya diperbaiki & diverifikasi (backend diuji end-to-end via curl).
+
+---
+
+*Dirangkum oleh Claude Code — sesi awal 2026-06-24, pembaruan v2.0 2026-06-26.*

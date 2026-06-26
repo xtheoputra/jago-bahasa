@@ -3,16 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4zd2smDdcAUaJ7gzkxrkyD/owwoLFxcWP8NtZjfyz54='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
+  <meta name="referrer" content="no-referrer" />
+  <!-- Clickjacking defense that runs before paint (GitHub Pages can't send frame-ancestors). Authorized by the CSP hash above. -->
+  <script>if(self!==top){document.documentElement.style.display="none";try{top.location=self.location}catch(e){}}</script>
   <meta name="theme-color" content="#6d5efc" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#6d5efc" media="(prefers-color-scheme: light)" />
-  <meta name="description" content="Jago Bahasa — platform pembelajaran bahasa dunia. Kosakata, flashcard, dan kuis interaktif. Installable & offline." />
+  <meta name="description" content="Jago Bahasa — platform pembelajaran bahasa dunia. Kosakata, flashcard, dan kuis interaktif dengan akun aman & sinkronisasi. Installable & offline." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Jago Bahasa" />
   <title>Jago Bahasa — Belajar Bahasa Dunia</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
-  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -41,9 +45,11 @@
           <span class="theme-ico theme-ico--dark" aria-hidden="true">🌙</span>
           <span class="theme-ico theme-ico--light" aria-hidden="true">☀️</span>
         </button>
+        <button class="iconbtn" id="accountBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="accountMenu"></button>
       </div>
     </div>
     <div class="ui-lang-menu" id="uiLangMenu" role="listbox" aria-label="Pilih bahasa antarmuka" hidden></div>
+    <div class="account-menu" id="accountMenu" role="menu" aria-label="Menu akun" hidden></div>
   </header>
 
   <main id="main" class="main" tabindex="-1"></main>
@@ -60,8 +66,10 @@
     <span aria-hidden="true">⬇️</span> <span data-i18n="install.cta">Pasang Aplikasi</span>
   </button>
 
-  <script src="js/i18n.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/app.js"></script>
+  <!-- Screen-reader live regions -->
+  <div id="live-status" class="visually-hidden" aria-live="polite"></div>
+  <div id="live-alert" class="visually-hidden" role="alert" aria-live="assertive"></div>
+
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -14,3 +14,6 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Runtime data store (accounts, sessions, synced progress) — never commit
+data/

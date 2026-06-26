@@ -2,8 +2,9 @@
    data.js — Course & lesson content
    Each meaning `m` is provided in the 3 UI languages (id / en / es).
    `reading` = romanization for non-Latin scripts. `speech` = BCP-47 TTS code.
+   ES module: `import { COURSES, findCourse, findLesson } from "./data.js"`.
    ========================================================================= */
-window.COURSES = [
+export const COURSES = [
   /* ---------------------------------------------------------------- ENGLISH */
   {
     id: "en", flag: "🇬🇧", native: "English", speech: "en-US", cjk: false,
@@ -335,7 +336,173 @@ window.COURSES = [
         ] },
     ],
   },
+
+  /* ---------------------------------------------------------------- ITALIAN */
+  {
+    id: "it", flag: "🇮🇹", native: "Italiano", speech: "it-IT", cjk: false,
+    name: { id: "Bahasa Italia", en: "Italian", es: "Italiano" },
+    tagline: { id: "Bahasa seni, musik, dan kuliner.", en: "The language of art, music, and cuisine.", es: "El idioma del arte, la música y la cocina." },
+    lessons: [
+      { id: "greet", icon: "👋", level: "beginner",
+        title: { id: "Sapaan & Perkenalan", en: "Greetings & Introductions", es: "Saludos y presentaciones" },
+        items: [
+          { term: "Ciao", m: { id: "Halo / dah", en: "Hello / bye", es: "Hola / chao" } },
+          { term: "Buongiorno", m: { id: "Selamat pagi", en: "Good morning", es: "Buenos días" } },
+          { term: "Grazie", m: { id: "Terima kasih", en: "Thank you", es: "Gracias" } },
+          { term: "Per favore", m: { id: "Tolong / silakan", en: "Please", es: "Por favor" } },
+          { term: "Mi chiamo…", m: { id: "Nama saya…", en: "My name is…", es: "Me llamo…" } },
+          { term: "Come stai?", m: { id: "Apa kabar?", en: "How are you?", es: "¿Cómo estás?" } },
+          { term: "Arrivederci", m: { id: "Selamat tinggal", en: "Goodbye", es: "Adiós" } },
+        ] },
+      { id: "num", icon: "🔢", level: "beginner",
+        title: { id: "Angka 1–10", en: "Numbers 1–10", es: "Números 1–10" },
+        items: [
+          { term: "Uno", m: { id: "Satu", en: "One", es: "Uno" } },
+          { term: "Due", m: { id: "Dua", en: "Two", es: "Dos" } },
+          { term: "Tre", m: { id: "Tiga", en: "Three", es: "Tres" } },
+          { term: "Quattro", m: { id: "Empat", en: "Four", es: "Cuatro" } },
+          { term: "Cinque", m: { id: "Lima", en: "Five", es: "Cinco" } },
+          { term: "Sei", m: { id: "Enam", en: "Six", es: "Seis" } },
+          { term: "Sette", m: { id: "Tujuh", en: "Seven", es: "Siete" } },
+          { term: "Dieci", m: { id: "Sepuluh", en: "Ten", es: "Diez" } },
+        ] },
+      { id: "ess", icon: "💬", level: "elementary",
+        title: { id: "Frasa Penting", en: "Essential Phrases", es: "Frases esenciales" },
+        items: [
+          { term: "Sì / No", m: { id: "Ya / Tidak", en: "Yes / No", es: "Sí / No" } },
+          { term: "Non capisco", m: { id: "Saya tidak mengerti", en: "I don't understand", es: "No entiendo" } },
+          { term: "Dov'è…?", m: { id: "Di mana…?", en: "Where is…?", es: "¿Dónde está…?" } },
+          { term: "Quanto costa?", m: { id: "Berapa harganya?", en: "How much is it?", es: "¿Cuánto cuesta?" } },
+          { term: "Aiuto!", m: { id: "Tolong!", en: "Help!", es: "¡Ayuda!" } },
+          { term: "Scusi", m: { id: "Permisi / maaf", en: "Excuse me", es: "Disculpe" } },
+        ] },
+    ],
+  },
+
+  /* ------------------------------------------------------------- PORTUGUESE */
+  {
+    id: "pt", flag: "🇧🇷", native: "Português", speech: "pt-BR", cjk: false,
+    name: { id: "Bahasa Portugis", en: "Portuguese", es: "Portugués" },
+    tagline: { id: "Dituturkan di empat benua.", en: "Spoken across four continents.", es: "Hablado en cuatro continentes." },
+    lessons: [
+      { id: "greet", icon: "👋", level: "beginner",
+        title: { id: "Sapaan & Perkenalan", en: "Greetings & Introductions", es: "Saludos y presentaciones" },
+        items: [
+          { term: "Olá", m: { id: "Halo", en: "Hello", es: "Hola" } },
+          { term: "Bom dia", m: { id: "Selamat pagi", en: "Good morning", es: "Buenos días" } },
+          { term: "Obrigado", m: { id: "Terima kasih", en: "Thank you", es: "Gracias" } },
+          { term: "Por favor", m: { id: "Tolong / silakan", en: "Please", es: "Por favor" } },
+          { term: "Meu nome é…", m: { id: "Nama saya…", en: "My name is…", es: "Me llamo…" } },
+          { term: "Como vai?", m: { id: "Apa kabar?", en: "How are you?", es: "¿Cómo estás?" } },
+          { term: "Tchau", m: { id: "Sampai jumpa", en: "Bye", es: "Chao" } },
+        ] },
+      { id: "num", icon: "🔢", level: "beginner",
+        title: { id: "Angka 1–10", en: "Numbers 1–10", es: "Números 1–10" },
+        items: [
+          { term: "Um", m: { id: "Satu", en: "One", es: "Uno" } },
+          { term: "Dois", m: { id: "Dua", en: "Two", es: "Dos" } },
+          { term: "Três", m: { id: "Tiga", en: "Three", es: "Tres" } },
+          { term: "Quatro", m: { id: "Empat", en: "Four", es: "Cuatro" } },
+          { term: "Cinco", m: { id: "Lima", en: "Five", es: "Cinco" } },
+          { term: "Seis", m: { id: "Enam", en: "Six", es: "Seis" } },
+          { term: "Sete", m: { id: "Tujuh", en: "Seven", es: "Siete" } },
+          { term: "Dez", m: { id: "Sepuluh", en: "Ten", es: "Diez" } },
+        ] },
+      { id: "ess", icon: "💬", level: "elementary",
+        title: { id: "Frasa Penting", en: "Essential Phrases", es: "Frases esenciales" },
+        items: [
+          { term: "Sim / Não", m: { id: "Ya / Tidak", en: "Yes / No", es: "Sí / No" } },
+          { term: "Não entendo", m: { id: "Saya tidak mengerti", en: "I don't understand", es: "No entiendo" } },
+          { term: "Onde fica…?", m: { id: "Di mana…?", en: "Where is…?", es: "¿Dónde está…?" } },
+          { term: "Quanto custa?", m: { id: "Berapa harganya?", en: "How much is it?", es: "¿Cuánto cuesta?" } },
+          { term: "Socorro!", m: { id: "Tolong!", en: "Help!", es: "¡Ayuda!" } },
+          { term: "Com licença", m: { id: "Permisi", en: "Excuse me", es: "Disculpe" } },
+        ] },
+    ],
+  },
+
+  /* ---------------------------------------------------------------- RUSSIAN */
+  {
+    id: "ru", flag: "🇷🇺", native: "Русский", speech: "ru-RU", cjk: false,
+    name: { id: "Bahasa Rusia", en: "Russian", es: "Ruso" },
+    tagline: { id: "Bahasa Slavia dengan penutur terbanyak.", en: "The most spoken Slavic language.", es: "La lengua eslava más hablada." },
+    lessons: [
+      { id: "greet", icon: "👋", level: "beginner",
+        title: { id: "Sapaan Dasar", en: "Basic Greetings", es: "Saludos básicos" },
+        items: [
+          { term: "Здравствуйте", reading: "Zdravstvuyte", m: { id: "Halo (formal)", en: "Hello (formal)", es: "Hola (formal)" } },
+          { term: "Привет", reading: "Privet", m: { id: "Hai (santai)", en: "Hi (casual)", es: "Hola (informal)" } },
+          { term: "Спасибо", reading: "Spasibo", m: { id: "Terima kasih", en: "Thank you", es: "Gracias" } },
+          { term: "Пожалуйста", reading: "Pozhaluysta", m: { id: "Tolong / sama-sama", en: "Please / you're welcome", es: "Por favor / de nada" } },
+          { term: "Меня зовут…", reading: "Menya zovut…", m: { id: "Nama saya…", en: "My name is…", es: "Me llamo…" } },
+          { term: "До свидания", reading: "Do svidaniya", m: { id: "Selamat tinggal", en: "Goodbye", es: "Adiós" } },
+        ] },
+      { id: "num", icon: "🔢", level: "beginner",
+        title: { id: "Angka 1–10", en: "Numbers 1–10", es: "Números 1–10" },
+        items: [
+          { term: "Один", reading: "Odin", m: { id: "Satu", en: "One", es: "Uno" } },
+          { term: "Два", reading: "Dva", m: { id: "Dua", en: "Two", es: "Dos" } },
+          { term: "Три", reading: "Tri", m: { id: "Tiga", en: "Three", es: "Tres" } },
+          { term: "Четыре", reading: "Chetyre", m: { id: "Empat", en: "Four", es: "Cuatro" } },
+          { term: "Пять", reading: "Pyat'", m: { id: "Lima", en: "Five", es: "Cinco" } },
+          { term: "Шесть", reading: "Shest'", m: { id: "Enam", en: "Six", es: "Seis" } },
+          { term: "Семь", reading: "Sem'", m: { id: "Tujuh", en: "Seven", es: "Siete" } },
+          { term: "Десять", reading: "Desyat'", m: { id: "Sepuluh", en: "Ten", es: "Diez" } },
+        ] },
+      { id: "ess", icon: "💬", level: "elementary",
+        title: { id: "Frasa Penting", en: "Essential Phrases", es: "Frases esenciales" },
+        items: [
+          { term: "Да / Нет", reading: "Da / Net", m: { id: "Ya / Tidak", en: "Yes / No", es: "Sí / No" } },
+          { term: "Я не понимаю", reading: "Ya ne ponimayu", m: { id: "Saya tidak mengerti", en: "I don't understand", es: "No entiendo" } },
+          { term: "Где…?", reading: "Gde…?", m: { id: "Di mana…?", en: "Where is…?", es: "¿Dónde está…?" } },
+          { term: "Сколько стоит?", reading: "Skol'ko stoit?", m: { id: "Berapa harganya?", en: "How much is it?", es: "¿Cuánto cuesta?" } },
+          { term: "Помогите!", reading: "Pomogite!", m: { id: "Tolong!", en: "Help!", es: "¡Ayuda!" } },
+          { term: "Извините", reading: "Izvinite", m: { id: "Permisi / maaf", en: "Excuse me", es: "Disculpe" } },
+        ] },
+    ],
+  },
+
+  /* ------------------------------------------------------------------ HINDI */
+  {
+    id: "hi", flag: "🇮🇳", native: "हिन्दी", speech: "hi-IN", cjk: false,
+    name: { id: "Bahasa Hindi", en: "Hindi", es: "Hindi" },
+    tagline: { id: "Salah satu bahasa terbesar di Asia Selatan.", en: "One of South Asia's largest languages.", es: "Una de las mayores lenguas del sur de Asia." },
+    lessons: [
+      { id: "greet", icon: "👋", level: "beginner",
+        title: { id: "Sapaan Dasar", en: "Basic Greetings", es: "Saludos básicos" },
+        items: [
+          { term: "नमस्ते", reading: "Namaste", m: { id: "Halo", en: "Hello", es: "Hola" } },
+          { term: "सुप्रभात", reading: "Suprabhāt", m: { id: "Selamat pagi", en: "Good morning", es: "Buenos días" } },
+          { term: "धन्यवाद", reading: "Dhanyavād", m: { id: "Terima kasih", en: "Thank you", es: "Gracias" } },
+          { term: "कृपया", reading: "Kṛpayā", m: { id: "Tolong / silakan", en: "Please", es: "Por favor" } },
+          { term: "मेरा नाम… है", reading: "Merā nām… hai", m: { id: "Nama saya…", en: "My name is…", es: "Me llamo…" } },
+          { term: "अलविदा", reading: "Alvidā", m: { id: "Selamat tinggal", en: "Goodbye", es: "Adiós" } },
+        ] },
+      { id: "num", icon: "🔢", level: "beginner",
+        title: { id: "Angka 1–10", en: "Numbers 1–10", es: "Números 1–10" },
+        items: [
+          { term: "एक", reading: "Ek", m: { id: "Satu", en: "One", es: "Uno" } },
+          { term: "दो", reading: "Do", m: { id: "Dua", en: "Two", es: "Dos" } },
+          { term: "तीन", reading: "Tīn", m: { id: "Tiga", en: "Three", es: "Tres" } },
+          { term: "चार", reading: "Chār", m: { id: "Empat", en: "Four", es: "Cuatro" } },
+          { term: "पाँच", reading: "Pā̃ch", m: { id: "Lima", en: "Five", es: "Cinco" } },
+          { term: "छह", reading: "Chhah", m: { id: "Enam", en: "Six", es: "Seis" } },
+          { term: "सात", reading: "Sāt", m: { id: "Tujuh", en: "Seven", es: "Siete" } },
+          { term: "दस", reading: "Das", m: { id: "Sepuluh", en: "Ten", es: "Diez" } },
+        ] },
+      { id: "ess", icon: "💬", level: "elementary",
+        title: { id: "Frasa Penting", en: "Essential Phrases", es: "Frases esenciales" },
+        items: [
+          { term: "हाँ / नहीं", reading: "Hā̃ / Nahī̃", m: { id: "Ya / Tidak", en: "Yes / No", es: "Sí / No" } },
+          { term: "मैं नहीं समझा", reading: "Maĩ nahī̃ samjhā", m: { id: "Saya tidak mengerti", en: "I don't understand", es: "No entiendo" } },
+          { term: "कहाँ है…?", reading: "Kahā̃ hai…?", m: { id: "Di mana…?", en: "Where is…?", es: "¿Dónde está…?" } },
+          { term: "कितने का है?", reading: "Kitne kā hai?", m: { id: "Berapa harganya?", en: "How much is it?", es: "¿Cuánto cuesta?" } },
+          { term: "मदद!", reading: "Madad!", m: { id: "Tolong!", en: "Help!", es: "¡Ayuda!" } },
+          { term: "माफ़ कीजिए", reading: "Māf kījie", m: { id: "Permisi / maaf", en: "Excuse me", es: "Disculpe" } },
+        ] },
+    ],
+  },
 ];
 
-window.findCourse = (id) => window.COURSES.find((c) => c.id === id);
-window.findLesson = (course, lid) => course && course.lessons.find((l) => l.id === lid);
+export const findCourse = (id) => COURSES.find((c) => c.id === id);
+export const findLesson = (course, lid) => course && course.lessons.find((l) => l.id === lid);

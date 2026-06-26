@@ -456,3 +456,155 @@ button { font-family: inherit; }
   animation: fall linear forwards;
 }
 @keyframes fall { to { transform: translateY(105vh) rotate(640deg); opacity: .9; } }
+
+/* =========================================================================
+   Accessibility utilities & view transitions
+   ========================================================================= */
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .26s; }
+}
+
+/* =========================================================================
+   Avatar
+   ========================================================================= */
+.avatar {
+  display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), var(--brand-700));
+  color: #fff; font-weight: 800; font-size: .9rem; letter-spacing: .02em; flex: 0 0 auto;
+}
+.avatar--sm { width: 30px; height: 30px; font-size: .8rem; }
+.avatar--lg { width: 64px; height: 64px; font-size: 1.5rem; }
+.iconbtn--avatar { padding: 5px; }
+
+/* =========================================================================
+   Account menu (appbar dropdown)
+   ========================================================================= */
+.account-menu {
+  position: absolute; right: clamp(14px, 4vw, 28px); top: calc(100% + 6px);
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop); padding: 6px; min-width: 240px; z-index: 80; display: grid; gap: 2px;
+}
+.account-menu[hidden] { display: none; }
+.account-menu a, .account-menu button {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: none; border: 0; color: var(--text); cursor: pointer; padding: 11px 12px;
+  border-radius: var(--r-sm); text-align: left; font-size: .94rem; font-weight: 600; text-decoration: none;
+}
+.account-menu a:hover, .account-menu button:hover { background: var(--surface-3); }
+.account-menu__head {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px 12px;
+  border-bottom: 1px solid var(--line); margin-bottom: 4px;
+}
+.account-menu__id { min-width: 0; }
+.account-menu__id strong { display: block; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 168px; }
+.account-menu__id small { display: block; color: var(--text-faint); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 168px; }
+
+/* =========================================================================
+   Guest banner
+   ========================================================================= */
+.guest-banner {
+  display: flex; align-items: center; gap: 16px; padding: 16px 18px; margin-bottom: 18px; flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--brand-soft), transparent); border: 1px solid var(--line-strong);
+}
+.guest-banner__icon { font-size: 1.8rem; }
+.guest-banner__text { flex: 1 1 220px; min-width: 0; }
+.guest-banner__text strong { display: block; }
+.guest-banner__text p { margin: 2px 0 0; color: var(--text-dim); font-size: .88rem; }
+.guest-banner__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* =========================================================================
+   Auth forms
+   ========================================================================= */
+.auth-wrap { max-width: 440px; margin: 10px auto; }
+.auth-card { padding: clamp(22px, 5vw, 32px); }
+.auth-head { text-align: center; margin-bottom: 18px; }
+.auth-logo {
+  width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; font-size: 1.9rem; margin: 0 auto 12px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-700)); box-shadow: var(--shadow-pop);
+}
+.auth-head h1 { font-size: 1.5rem; margin: 0 0 6px; }
+.auth-head p { margin: 0; color: var(--text-dim); font-size: .92rem; }
+
+.field { margin-bottom: 14px; }
+.field > label { display: block; font-weight: 700; font-size: .86rem; margin-bottom: 6px; }
+.field input {
+  width: 100%; padding: 12px 14px; border-radius: var(--r-md); border: 1.5px solid var(--line-strong);
+  background: var(--surface-2); color: var(--text); font-size: 1rem; font-family: inherit;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.field input:focus { outline: none; border-color: var(--brand); background: var(--surface); }
+.field input[aria-invalid="true"] { border-color: var(--danger); }
+.field input:disabled { opacity: .6; cursor: not-allowed; }
+.field-err { color: var(--danger); font-size: .8rem; font-weight: 600; margin: 6px 0 0; min-height: 1px; }
+
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 46px; }
+.pw-toggle {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px;
+  border: 0; background: transparent; cursor: pointer; border-radius: 8px; font-size: 1.05rem; color: var(--text-dim);
+}
+.pw-toggle:hover { background: var(--surface-3); }
+.pw-toggle[aria-pressed="true"] { color: var(--brand); }
+
+.pw-meter { height: 6px; border-radius: var(--r-pill); background: var(--surface-3); overflow: hidden; margin-top: 8px; }
+.pw-meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--danger); transition: width var(--t-med), background var(--t-med); }
+.pw-meter i[data-score="2"] { background: var(--warning); }
+.pw-meter i[data-score="3"] { background: #7bd389; }
+.pw-meter i[data-score="4"] { background: var(--success); }
+.pw-label { font-size: .78rem; color: var(--text-dim); margin: 4px 0 0; font-weight: 600; }
+
+.check { display: flex; align-items: flex-start; gap: 9px; font-size: .88rem; color: var(--text-dim); cursor: pointer; margin-bottom: 6px; }
+.check input { margin-top: 2px; accent-color: var(--brand); width: 16px; height: 16px; }
+
+.auth-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 16px; flex-wrap: wrap; }
+.auth-note { font-size: .8rem; color: var(--text-faint); margin: 12px 0 0; text-align: center; }
+.auth-hint { font-size: .8rem; color: var(--text-faint); margin: 0 0 12px; }
+.auth-alt { text-align: center; margin-top: 16px; font-size: .9rem; color: var(--text-dim); }
+.auth-alt a { color: var(--brand); font-weight: 700; }
+.auth-error { color: var(--danger); font-weight: 600; font-size: .88rem; margin: 0 0 10px; min-height: 1px; }
+.auth-sep { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--text-faint); font-size: .82rem; }
+.auth-sep::before, .auth-sep::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.btn--block { width: 100%; }
+.btn.is-busy { opacity: .7; cursor: progress; }
+
+/* =========================================================================
+   Account page
+   ========================================================================= */
+.account-head { display: flex; gap: 16px; align-items: center; margin-bottom: 22px; flex-wrap: wrap; }
+.account-head h1 { font-size: clamp(1.4rem, 4vw, 1.9rem); margin: 0; }
+.account-head p { margin: 2px 0 0; color: var(--text-dim); }
+.account-meta { font-size: .82rem; color: var(--text-faint); }
+.account-section { padding: 20px 22px; margin-bottom: 16px; }
+.account-section h2 { font-size: 1.1rem; margin: 0 0 14px; }
+.account-section--danger { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
+.account-danger-desc { font-size: .85rem; color: var(--text-dim); margin: 0 0 14px; }
+.account-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.sync-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn--danger { background: linear-gradient(135deg, #ff738d, var(--danger)); box-shadow: 0 8px 22px -8px var(--danger); color: #fff; }
+
+/* =========================================================================
+   Modal dialog
+   ========================================================================= */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 200; background: rgba(8, 10, 24, .55); backdrop-filter: blur(3px);
+  display: grid; place-items: center; padding: 20px; animation: fade .2s var(--ease);
+}
+.modal { max-width: 420px; width: 100%; padding: 24px; }
+.modal h3 { margin: 0 0 8px; font-size: 1.2rem; }
+.modal p { margin: 0 0 18px; color: var(--text-dim); }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* =========================================================================
+   Skeleton loaders
+   ========================================================================= */
+.skeleton-wrap { display: grid; gap: 12px; }
+.skeleton {
+  height: 64px; border-radius: var(--r-md);
+  background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+  background-size: 200% 100%; animation: shimmer 1.3s linear infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }

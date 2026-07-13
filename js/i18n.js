@@ -42,7 +42,7 @@ export const I18N = {
       "toast.reset": "Progres telah diatur ulang.", "toast.offline": "Kamu sedang offline — konten tetap tersedia.",
       "toast.online": "Kembali online.", "toast.updated": "Pembaruan tersedia — muat ulang untuk versi terbaru.",
       "level": "Level", "xp": "XP", "words": "kata", "minutes": "menit",
-      "diff.beginner": "Pemula", "diff.elementary": "Dasar", "diff.intermediate": "Menengah",
+      "diff.beginner": "Pemula", "diff.elementary": "Dasar", "diff.intermediate": "Menengah", "diff.advanced": "Lanjutan",
 
       /* ---- Account chrome ---- */
       "account.signIn": "Masuk", "account.register": "Daftar", "account.menuLabel": "Menu akun",
@@ -150,7 +150,7 @@ export const I18N = {
       "toast.reset": "Progress has been reset.", "toast.offline": "You're offline — content is still available.",
       "toast.online": "Back online.", "toast.updated": "An update is available — reload for the latest version.",
       "level": "Level", "xp": "XP", "words": "words", "minutes": "min",
-      "diff.beginner": "Beginner", "diff.elementary": "Elementary", "diff.intermediate": "Intermediate",
+      "diff.beginner": "Beginner", "diff.elementary": "Elementary", "diff.intermediate": "Intermediate", "diff.advanced": "Advanced",
 
       "account.signIn": "Sign in", "account.register": "Create account", "account.menuLabel": "Account menu",
       "account.open": "Open account menu", "account.guest": "Guest", "account.guestSub": "Not signed in",
@@ -249,7 +249,7 @@ export const I18N = {
       "toast.reset": "Progreso reiniciado.", "toast.offline": "Sin conexión — el contenido sigue disponible.",
       "toast.online": "De vuelta en línea.", "toast.updated": "Hay una actualización — recarga para la última versión.",
       "level": "Nivel", "xp": "XP", "words": "palabras", "minutes": "min",
-      "diff.beginner": "Principiante", "diff.elementary": "Básico", "diff.intermediate": "Intermedio",
+      "diff.beginner": "Principiante", "diff.elementary": "Básico", "diff.intermediate": "Intermedio", "diff.advanced": "Avanzado",
 
       "account.signIn": "Iniciar sesión", "account.register": "Crear cuenta", "account.menuLabel": "Menú de cuenta",
       "account.open": "Abrir menú de cuenta", "account.guest": "Invitado", "account.guestSub": "Sin iniciar sesión",

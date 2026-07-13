@@ -107,6 +107,9 @@ button { font-family: inherit; }
    ========================================================================= */
 .appbar {
   position: sticky; top: 0; z-index: 60;
+  /* Clear the notch/status bar on iPhone X/11+ (esp. installed to Home Screen). */
+  padding-top: env(safe-area-inset-top);
+  background: var(--surface); /* opaque fallback for iOS < 16.2 (no color-mix) */
   background: color-mix(in srgb, var(--surface) 82%, transparent);
   backdrop-filter: saturate(160%) blur(14px);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
@@ -337,7 +340,7 @@ button { font-family: inherit; }
 }
 .flashcard__inner {
   position: relative; width: 100%; height: 100%; transition: transform .6s var(--ease);
-  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d; transform-style: preserve-3d;
 }
 .flashcard.flipped .flashcard__inner { transform: rotateY(180deg); }
 .flashcard__face {
@@ -410,6 +413,7 @@ button { font-family: inherit; }
 .bottomnav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
   display: flex; justify-content: space-around;
+  background: var(--surface); /* opaque fallback for iOS < 16.2 (no color-mix) */
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px);
   border-top: 1px solid var(--line);
@@ -580,7 +584,7 @@ button { font-family: inherit; }
 .account-meta { font-size: .82rem; color: var(--text-faint); }
 .account-section { padding: 20px 22px; margin-bottom: 16px; }
 .account-section h2 { font-size: 1.1rem; margin: 0 0 14px; }
-.account-section--danger { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
+.account-section--danger { border-color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
 .account-danger-desc { font-size: .85rem; color: var(--text-dim); margin: 0 0 14px; }
 .account-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .sync-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

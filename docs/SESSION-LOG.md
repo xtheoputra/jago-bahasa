@@ -94,4 +94,33 @@ Dibangun dengan orkestrasi multi-agen (ultracode): workflow **desain/analisis-ri
 
 ---
 
-*Dirangkum oleh Claude Code — sesi awal 2026-06-24, pembaruan v2.0 2026-06-26.*
+## Pembaruan v2.1 — Konten Kosakata & Hardening iOS/Safari (2026-07-13)
+
+Permintaan pengguna: *"tambahkan yang banyak kosakata, dengan bahasa korea sebagai prioritas, bahasa percakapan pekerjaan, dan bahasa ticketing pesawat, refund dan contohnya"* dan *"harus bisa berjalan di iphone 8 keatas dengan baik ... iphone 10-11 keatas, dan harus bisa bekerja di safari browser."*
+
+### Konten kosakata (`js/data.js`)
+- **Bahasa Korea (prioritas)** — 3 pelajaran baru, **+47 kosakata**, semua dengan contoh kalimat (Hangul + romanisasi + arti id/en/es):
+  - 💼 `work` — Percakapan di Kantor (menengah, 15 kata)
+  - ✈️ `ticket` — Tiket Pesawat & Bandara (menengah, 16 kata)
+  - 💸 `refund` — Refund & Pembatalan (lanjutan, 16 kata)
+- **Bahasa Inggris** — 3 pelajaran bertema sama, **+45 kosakata** dengan contoh (praktis untuk konteks kerja & penerbangan lintas negara).
+- Level kesulitan baru **`advanced`** ("Lanjutan"/"Advanced"/"Avanzado") ditambahkan ke `js/i18n.js`.
+- Divalidasi: import ESM bersih (338 total item, tidak ada arti/contoh/romanisasi hilang) + smoke test HTTP.
+
+### Hardening iOS/Safari (`css/styles.css`, `sw.js`)
+Target: **iPhone 8+ (baseline iOS 16)** & **iPhone X/11+** di Safari.
+- `.appbar` → `padding-top: env(safe-area-inset-top)` agar notch iPhone X/11+ tak menutupi bar (mode standalone).
+- Fallback `background: var(--surface)` sebelum `color-mix()` di `.appbar`, `.bottomnav`, & border danger (`color-mix()` butuh iOS 16.2 → iPhone 8 di iOS 16.0/16.1 tetap dapat bar bertint).
+- `-webkit-transform-style: preserve-3d` di `.flashcard__inner` agar flip 3D andal di Safari.
+- SW `VERSION` `jb-v2.0.1` → `jb-v2.0.2` untuk memaksa refresh cache CSS/data.
+
+Catatan: belum diuji di perangkat iOS asli (analisis kode + cek brace/smoke test). Install di iOS tetap manual (Share → Add to Home Screen). Wajib HTTPS untuk `crypto.subtle` + Service Worker.
+
+### Ide lanjutan (untuk sesi berikutnya)
+- Replikasi tema `work`/`ticket`/`refund` ke bahasa lain (Jepang & Mandarin paling relevan).
+- Petunjuk "Add to Home Screen" khusus iOS (karena `beforeinstallprompt` tak ada di iOS).
+- Uji langsung di iPhone via URL HTTPS GitHub Pages.
+
+---
+
+*Dirangkum oleh Claude Code — sesi awal 2026-06-24, pembaruan v2.0 2026-06-26, pembaruan v2.1 2026-07-13.*

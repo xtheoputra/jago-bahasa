@@ -15,6 +15,7 @@ import {
 import { registerSW } from "./pwa.js";
 import { renderHome, renderCourses, renderCourse, renderLesson, renderProgress, renderAbout } from "./views/learn.js";
 import { renderFlashcards, renderQuiz } from "./views/practice.js";
+import { renderDictionary } from "./views/dictionary.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
 import { notFound } from "./views/partials.js";
 
@@ -22,6 +23,7 @@ import { notFound } from "./views/partials.js";
 registerRoutes({
   home: { render: renderHome },
   courses: { render: renderCourses },
+  search: { render: renderDictionary },
   course: { render: renderCourse },
   lesson: { render: renderLesson },
   flashcards: { render: renderFlashcards },

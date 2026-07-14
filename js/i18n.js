@@ -43,6 +43,11 @@ export const I18N = {
       "toast.online": "Kembali online.", "toast.updated": "Pembaruan tersedia — muat ulang untuk versi terbaru.",
       "level": "Level", "xp": "XP", "words": "kata", "minutes": "menit",
       "diff.beginner": "Pemula", "diff.elementary": "Dasar", "diff.intermediate": "Menengah", "diff.advanced": "Lanjutan", "diff.proficient": "Mahir", "diff.expert": "Ahli",
+      "nav.search": "Kamus",
+      "search.title": "Kamus", "search.sub": "Cari kata di semua bahasa & pelajaran.",
+      "search.placeholder": "Cari kata, arti, atau contoh…", "search.allLangs": "Semua bahasa", "search.allLevels": "Semua level",
+      "search.withEx": "Hanya yang ada contoh", "search.count": "%s hasil", "search.capped": "Menampilkan %s teratas — persempit pencarianmu.",
+      "search.none": "Tidak ada hasil. Coba kata kunci lain.", "search.hint": "Mulai ketik untuk mencari, atau gunakan filter di atas.",
 
       /* ---- Account chrome ---- */
       "account.signIn": "Masuk", "account.register": "Daftar", "account.menuLabel": "Menu akun",
@@ -151,6 +156,11 @@ export const I18N = {
       "toast.online": "Back online.", "toast.updated": "An update is available — reload for the latest version.",
       "level": "Level", "xp": "XP", "words": "words", "minutes": "min",
       "diff.beginner": "Beginner", "diff.elementary": "Elementary", "diff.intermediate": "Intermediate", "diff.advanced": "Advanced", "diff.proficient": "Proficient", "diff.expert": "Expert",
+      "nav.search": "Dictionary",
+      "search.title": "Dictionary", "search.sub": "Search words across all languages & lessons.",
+      "search.placeholder": "Search a word, meaning, or example…", "search.allLangs": "All languages", "search.allLevels": "All levels",
+      "search.withEx": "Only with examples", "search.count": "%s results", "search.capped": "Showing top %s — narrow your search.",
+      "search.none": "No results. Try another keyword.", "search.hint": "Start typing to search, or use the filters above.",
 
       "account.signIn": "Sign in", "account.register": "Create account", "account.menuLabel": "Account menu",
       "account.open": "Open account menu", "account.guest": "Guest", "account.guestSub": "Not signed in",
@@ -250,6 +260,11 @@ export const I18N = {
       "toast.online": "De vuelta en línea.", "toast.updated": "Hay una actualización — recarga para la última versión.",
       "level": "Nivel", "xp": "XP", "words": "palabras", "minutes": "min",
       "diff.beginner": "Principiante", "diff.elementary": "Básico", "diff.intermediate": "Intermedio", "diff.advanced": "Avanzado", "diff.proficient": "Competente", "diff.expert": "Experto",
+      "nav.search": "Diccionario",
+      "search.title": "Diccionario", "search.sub": "Busca palabras en todos los idiomas y lecciones.",
+      "search.placeholder": "Busca una palabra, significado o ejemplo…", "search.allLangs": "Todos los idiomas", "search.allLevels": "Todos los niveles",
+      "search.withEx": "Solo con ejemplos", "search.count": "%s resultados", "search.capped": "Mostrando los %s primeros — afina tu búsqueda.",
+      "search.none": "Sin resultados. Prueba otra palabra.", "search.hint": "Empieza a escribir para buscar, o usa los filtros de arriba.",
 
       "account.signIn": "Iniciar sesión", "account.register": "Crear cuenta", "account.menuLabel": "Menú de cuenta",
       "account.open": "Abrir menú de cuenta", "account.guest": "Invitado", "account.guestSub": "Sin iniciar sesión",

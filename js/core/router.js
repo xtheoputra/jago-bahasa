@@ -14,7 +14,7 @@ let routeAbort = null;
 
 const NAV_MAP = {
   home: "home", courses: "courses", course: "courses", lesson: "courses",
-  flashcards: "courses", quiz: "courses", search: "search", progress: "progress", about: "about",
+  flashcards: "courses", quiz: "courses", cloze: "courses", search: "search", review: "progress", progress: "progress", about: "about",
   login: null, register: null, account: null,
 };
 

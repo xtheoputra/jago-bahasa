@@ -50,6 +50,8 @@ export function renderHome(view) {
   const lvl = store.levelFromXp(st.xp);
   const last = st.lastCourse ? findCourse(st.lastCourse) : null;
   const popular = COURSES.slice(0, 4);
+  const srsPool = store.srsPool();
+  const srsDue = srsPool.length ? store.srsDue(srsPool).length : 0;
 
   const week = store.lastNDates(7);
   const streakCells = week
@@ -88,6 +90,13 @@ export function renderHome(view) {
       <div class="card stat"><div class="num"><span class="ico">📖</span>${store.wordsLearned()}</div><div class="lbl">${esc(t("stat.words"))}</div></div>
       <div class="card stat"><div class="num"><span class="ico">🏅</span>${lvl}</div><div class="lbl">${esc(t("stat.level"))}</div></div>
     </div>
+
+    ${srsPool.length ? `
+    <a class="card review-cta" href="#/review" style="margin-top:20px">
+      <div class="review-cta__ico" aria-hidden="true">🔁</div>
+      <div class="review-cta__txt"><strong>${esc(t("home.review"))}</strong><span>${esc(srsDue ? t("home.reviewDue", srsDue) : t("review.none"))}</span></div>
+      <span class="btn btn--sm">${esc(t("home.reviewGo"))} →</span>
+    </a>` : ""}
 
     ${last ? `
     <section style="margin-top:26px">
@@ -193,6 +202,7 @@ export function renderLesson(view, [cid, lid]) {
     <div class="practice-bar">
       <button class="btn" id="goFlash">🃏 ${esc(t("lesson.flashcards"))}</button>
       <button class="btn btn--accent" id="goQuiz">🧠 ${esc(t("lesson.quiz"))}</button>
+      ${l.items.some((it) => it.ex) ? `<button class="btn" id="goCloze">✍️ ${esc(t("lesson.cloze"))}</button>` : ""}
       <button class="btn btn--ghost" id="markDone" ${done ? "disabled" : ""}>${done ? "✓ " + esc(t("lesson.done")) : esc(t("lesson.done"))}</button>
     </div>
   `;
@@ -200,6 +210,8 @@ export function renderLesson(view, [cid, lid]) {
   wireSpeak(view, c);
   $("#goFlash").onclick = () => navigate(`#/flashcards/${c.id}/${l.id}`);
   $("#goQuiz").onclick = () => navigate(`#/quiz/${c.id}/${l.id}`);
+  const clozeBtn = $("#goCloze");
+  if (clozeBtn) clozeBtn.onclick = () => navigate(`#/cloze/${c.id}/${l.id}`);
   $("#markDone").onclick = () => {
     const r = store.completeLesson(c, l, null);
     if (r.first) confetti();
@@ -226,8 +238,13 @@ export function renderProgress(view) {
   const into = store.xpIntoLevel(st.xp);
   const any = store.doneCount() > 0 || st.xp > 0;
 
+  const srsPool = store.srsPool();
+  const srsDue = srsPool.length ? store.srsDue(srsPool).length : 0;
+
   view.innerHTML = `
-    <div class="section-head"><div><h2>${esc(t("progress.title"))}</h2><p>${esc(t("progress.sub"))}</p></div></div>
+    <div class="section-head"><div><h2>${esc(t("progress.title"))}</h2><p>${esc(t("progress.sub"))}</p></div>
+      ${srsPool.length ? `<a class="btn btn--accent" href="#/review" style="white-space:nowrap">🔁 ${esc(t("review.title"))}${srsDue ? ` · ${srsDue}` : ""}</a>` : ""}
+    </div>
 
     <div class="card" style="padding:22px;margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">

@@ -19,6 +19,7 @@ export function defaultState() {
     lastActive: null, // YYYY-MM-DD
     activeDays: [], // recent ISO dates
     lastCourse: null,
+    srs: {}, // "courseId/lessonId#index": { due, interval, ease, reps, lapses }
     updatedAt: 0,
   };
 }
@@ -93,6 +94,11 @@ export function lastNDates(n) {
   }
   return out;
 }
+function addDaysISO(iso, n) {
+  const d = new Date(iso);
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function touchStreak() {
   const today = todayISO();
@@ -157,6 +163,62 @@ export function addXp(n) {
   persist();
 }
 
+/* --------------------------------------------------- spaced repetition (SRS)
+   Cards are drawn from lessons the user has completed. Scheduling is an
+   SM-2-lite: each grade adjusts the interval and ease; a "due" card is one
+   whose next-review date has arrived (new cards are due immediately). */
+export function srsPool() {
+  const out = [];
+  for (const key of Object.keys(state.doneLessons)) {
+    const [cid, lid] = key.split("/");
+    const c = COURSES.find((x) => x.id === cid);
+    const l = c && c.lessons.find((x) => x.id === lid);
+    if (!c || !l) continue;
+    l.items.forEach((it, i) => out.push({ key: `${cid}/${lid}#${i}`, c, l, it }));
+  }
+  return out;
+}
+export function srsDue(pool) {
+  const today = todayISO();
+  return pool.filter((p) => {
+    const s = state.srs[p.key];
+    return !s || s.due <= today;
+  });
+}
+export function srsGrade(key, grade) {
+  const today = todayISO();
+  const s = state.srs[key] || { due: today, interval: 0, ease: 2.5, reps: 0, lapses: 0 };
+  let { interval, ease, reps } = s;
+  let lapses = s.lapses || 0;
+  if (grade === "again") {
+    reps = 0;
+    interval = 0;
+    ease = Math.max(1.3, ease - 0.2);
+    lapses += 1;
+  } else if (grade === "hard") {
+    interval = reps === 0 ? 1 : Math.max(1, Math.round(interval * 1.2));
+    reps += 1;
+    ease = Math.max(1.3, ease - 0.15);
+  } else if (grade === "easy") {
+    interval = reps === 0 ? 2 : Math.round(Math.max(1, interval) * ease * 1.3);
+    reps += 1;
+    ease += 0.1;
+  } else {
+    // good
+    interval = reps === 0 ? 1 : reps === 1 ? 3 : Math.round(Math.max(1, interval) * ease);
+    reps += 1;
+  }
+  state.srs[key] = { due: addDaysISO(today, interval), interval, ease, reps, lapses };
+  persist();
+}
+/** Reward a finished practice session with XP + streak (capped to curb farming). */
+export function srsReviewed(n) {
+  if (n <= 0) return;
+  state.xp += Math.min(n, 20) * 2;
+  touchStreak();
+  persist();
+}
+
 export function reset() {
   state = defaultState();
   persist();
@@ -177,6 +239,11 @@ function mergeInto(target, src) {
   }
   for (const k of Object.keys(src.quizScores || {})) {
     target.quizScores[k] = Math.max(target.quizScores[k] || 0, src.quizScores[k] || 0);
+  }
+  target.srs = target.srs || {};
+  for (const k of Object.keys(src.srs || {})) {
+    const a = target.srs[k], b = src.srs[k];
+    if (!a || (b && (b.reps || 0) > (a.reps || 0))) target.srs[k] = b;
   }
   target.activeDays = Array.from(new Set([...(target.activeDays || []), ...(src.activeDays || [])]))
     .sort()

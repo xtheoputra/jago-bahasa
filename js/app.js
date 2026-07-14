@@ -14,7 +14,7 @@ import {
 } from "./chrome.js";
 import { registerSW } from "./pwa.js";
 import { renderHome, renderCourses, renderCourse, renderLesson, renderProgress, renderAbout } from "./views/learn.js";
-import { renderFlashcards, renderQuiz } from "./views/practice.js";
+import { renderFlashcards, renderQuiz, renderReview, renderCloze } from "./views/practice.js";
 import { renderDictionary } from "./views/dictionary.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
 import { notFound } from "./views/partials.js";
@@ -28,6 +28,8 @@ registerRoutes({
   lesson: { render: renderLesson },
   flashcards: { render: renderFlashcards },
   quiz: { render: renderQuiz },
+  cloze: { render: renderCloze },
+  review: { render: renderReview },
   progress: { render: renderProgress },
   about: { render: renderAbout },
   login: { render: renderLogin },

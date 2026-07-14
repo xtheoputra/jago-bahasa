@@ -160,3 +160,30 @@ Catatan: belum diuji klik di perangkat asli; verifikasi lewat import/validasi st
 ---
 
 *Dirangkum oleh Claude Code — sesi awal 2026-06-24, pembaruan v2.0 2026-06-26, v2.1 2026-07-13, v2.2 2026-07-14.*
+
+---
+
+## Pembaruan v2.3 — Grammar, Tema Baru, Kamus Cari & Latihan SRS (2026-07-14)
+
+Permintaan pengguna: *"lanjutkan apa yang dapat ditambahkan / ide"* → dipilih **keempat** arah: fitur Kamus/Cari, Latihan pintar (SRS + isian), Tata bahasa Korea & Inggris, dan lebih banyak kosakata tema. Dikerjakan berurutan, tiap tahap divalidasi & di-commit terpisah.
+
+### 1. Konten: grammar + tema (`js/data.js`) — commit konten
+- **Korea (+6 pelajaran):** 🧩 Partikel & Pola (은/는·이/가·을/를·에·에서…), 🔧 Konjugasi & Kesopanan (~아/어요·~습니다·~았/었어요·~(으)ㄹ 거예요…), 🏥 Medis, 💻 IT, 🧑‍💼 Wawancara Kerja, 🎬 K-drama & bahasa gaul (대박·헐·꿀잼…).
+- **Inggris (+5 pelajaran):** 🧩 Tenses & Grammar, 🏥 Medical, 💻 IT, 🧑‍💼 Job Interview, 📚 IELTS/TOEFL academic.
+- Total konten kini **70 pelajaran / 629 item / 364 contoh** (Korea 20·209 kata, Inggris 20·215 kata). Validasi ESM 0 error.
+
+### 2. Fitur Kamus/Cari (`js/views/dictionary.js`, route `#/search`) — commit fitur
+- Meng-index seluruh 629 kosakata → pencarian langsung (debounce) atas istilah, romanisasi, 3 arti, & contoh; **tak sensitif diakritik** untuk Latin, cocok persis untuk Hangul/Han. Filter **bahasa + level + "ada contoh"**. Batas 200 hasil dengan pemberitahuan (tanpa potong senyap). TTS per-hasil (kode BCP-47 masing-masing). Tautan nav baru **Kamus** (atas + bawah).
+- Uji harness DOM-stub: `refund`→17, `환불`→9, `annyeong`→3, expert+contoh→52.
+
+### 3. Latihan SRS + Cloze (`js/views/practice.js`, `js/core/state.js`) — commit fitur
+- **Review Harian (`#/review`):** penjadwalan **SM-2-lite** atas kata dari pelajaran yang sudah selesai. Kartu baru langsung jatuh tempo; tombol Ulang/Sulit/Bagus/Mudah menyesuaikan interval + ease & tanggal jatuh tempo berikutnya. "Ulang" muncul lagi dalam sesi; "belajar lebih awal" bila tak ada yang due. Selesai → XP (dibatasi) + streak. `state.srs` namespaced per-user + ikut merge/sinkron. Pintu masuk: CTA di Beranda (with due count), tombol di Progres. Keyboard: Spasi buka, 1–4 nilai.
+- **Cloze/Isian (`#/cloze/:cid/:lid`):** isian dari kalimat contoh (blanking cerdas menangani "to <verb>" & aksara non-Latin), 4 pilihan; fallback bila tak ada contoh. Tombol "Isian" muncul di pelajaran hanya jika ada contoh.
+- Uji unit SRS (pool/due/grade/ease/interval/XP/snapshot) lolos; cloze mencakup 32/35 pelajaran ber-contoh (292 item).
+
+### Umum
+- 2 tier level baru sudah ada sejak v2.2 (Mahir/Ahli). i18n bertambah untuk search/review/cloze (id/en/es). SW `jb-v2.1.0` → **`jb-v2.3.0`** (via 3 commit). Divalidasi: `node --check` + smoke test HTTP 200 semua aset; belum diklik di perangkat asli.
+
+---
+
+*Diperbarui — v2.3 2026-07-14 (grammar+tema, Kamus, SRS+Cloze).*

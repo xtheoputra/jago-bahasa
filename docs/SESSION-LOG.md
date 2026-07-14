@@ -123,4 +123,40 @@ Catatan: belum diuji di perangkat iOS asli (analisis kode + cek brace/smoke test
 
 ---
 
-*Dirangkum oleh Claude Code — sesi awal 2026-06-24, pembaruan v2.0 2026-06-26, pembaruan v2.1 2026-07-13.*
+## Pembaruan v2.2 — Kamus Korea & Inggris Tingkat Ahli (2026-07-14)
+
+Permintaan pengguna: *"perkaya lagi kamus bahasa, dengan korea dan inggris sebagai prioritas, se profesional dan se canggih mungkin, kebutuhan expert untuk belajar korea dan inggris, mulai dari basic sampai yang tertinggi."*
+
+### Dua tingkat kesulitan baru (`js/i18n.js`)
+Jenjang diperluas dari 4 → **6 level** agar ada tangga "basic sampai tertinggi", ditambahkan ke ketiga bahasa UI:
+- `proficient` — **Mahir** / Proficient / Competente (setara C1)
+- `expert` — **Ahli** / Expert / Experto (setara C2)
+
+### Konten kosakata (`js/data.js`) — semua trilingual (id/en/es), mayoritas dengan contoh kalimat
+- **Bahasa Korea (prioritas)** — 8 pelajaran baru, disisipkan sesuai urutan level menaik (Hangul + romanisasi RR + arti + contoh):
+  - 🍚 `food` — Makanan & Restoran (dasar)
+  - 🧭 `direction` — Arah & Transportasi (menengah)
+  - 😊 `emotion` — Perasaan & Emosi (menengah)
+  - 📧 `business` — Bisnis & Email Formal (lanjutan; honorifik bisnis: 담당자·회신·결재·감사드립니다)
+  - 🏦 `bank` — Perbankan & Keuangan (lanjutan; 입금·출금·송금·환율·대출)
+  - 🗣️ `idiom` — Peribahasa & Idiom (mahir; 속담/관용구: 눈치가 빠르다·티끌 모아 태산·우물 안 개구리)
+  - 🙇 `honorific` — Honorifik & Tingkat Tutur (ahli; 존댓말/반말, 계시다·잡수시다·주무시다·께서·-(으)시-)
+  - 🎓 `academic` — Kosakata Akademis & Formal (ahli; 그러므로·따라서·영향을 미치다·요약하면)
+- **Bahasa Inggris** — 9 pelajaran baru, jenjang basic → tertinggi:
+  - 🍽️ `food` (dasar) · 🧭 `city` (dasar)
+  - 🔗 `phrasal` — Phrasal Verbs (menengah, tiap kata + contoh) · 🧑 `describe` — Describing People (menengah)
+  - 📈 `business` — Business & Negotiation (lanjutan) · 📝 `academic` — Academic & Formal Writing (lanjutan)
+  - 🗣️ `idiom` — Idioms & Collocations (mahir) · 💎 `nuance` — Nuanced C2 Vocabulary (ahli) · 🎯 `discourse` — Discourse Markers & Rhetoric (ahli)
+- Untuk kosakata tingkat ahli, kolom arti Inggris (`m.en`) diisi definisi/sinonim singkat (mis. *Meticulous → "Extremely careful and precise"*) sebagai bantuan belajar monolingual.
+
+### Validasi
+- Import ESM bersih: **12 kursus, 59 pelajaran, 519 item, 254 contoh** — 0 error, 0 warning (cek: tiap item punya `term` + `m.{id,en,es}`, tiap `ex` lengkap, tak ada id pelajaran/term ganda per course, setiap `level` punya kunci `diff.*` di 3 bahasa UI).
+- Total kini: **Korea 14 pelajaran / 149 kata**, **Inggris 15 pelajaran / 165 kata**.
+- `node --check` untuk `data.js` & `i18n.js` (via salinan `.mjs`) — sintaks OK. Smoke test HTTP: `/`, `/js/data.js`, `/js/i18n.js`, `/sw.js` → semua 200.
+- SW `VERSION` `jb-v2.0.2` → `jb-v2.1.0` agar cache `data.js`/`i18n.js` ter-refresh di klien lama.
+
+Catatan: belum diuji klik di perangkat asli; verifikasi lewat import/validasi struktur + smoke test HTTP.
+
+---
+
+*Dirangkum oleh Claude Code — sesi awal 2026-06-24, pembaruan v2.0 2026-06-26, v2.1 2026-07-13, v2.2 2026-07-14.*

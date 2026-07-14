@@ -2,7 +2,7 @@
    Jago Bahasa — Service Worker (offline-first app shell)
    v2: ES-module precache, /api network-only, no HTML fallback for assets.
    ========================================================================= */
-const VERSION = "jb-v2.0.2";
+const VERSION = "jb-v2.1.0";
 const CACHE = `jagobahasa-${VERSION}`;
 
 const ASSETS = [

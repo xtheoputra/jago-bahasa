@@ -6,7 +6,7 @@ import { toast, confetti } from "../core/ui.js";
 import * as store from "../core/state.js";
 import { COURSES, findCourse, findLesson } from "../data.js";
 import {
-  courseCardHTML, wireCourseCards, lessonRowHTML, vocabHTML, wireSpeak, progRowHTML, notFound,
+  courseCardHTML, wireCourseCards, lessonRowHTML, vocabHTML, dialogHTML, wireSpeak, progRowHTML, notFound,
 } from "./partials.js";
 import { navigate, rerender } from "../core/router.js";
 import { session } from "../auth/session.js";
@@ -192,12 +192,14 @@ export function renderLesson(view, [cid, lid]) {
       <span>${esc(mean(l.title))}</span>
     </nav>
     <div class="section-head">
-      <div><span class="eyebrow">${esc(t("lesson.vocab"))}</span><h2>${esc(l.icon)} ${esc(mean(l.title))}</h2><p>${esc(t("lesson.intro"))}</p></div>
+      <div><span class="eyebrow">${esc(t(l.dialog ? "lesson.convo" : "lesson.vocab"))}</span><h2>${esc(l.icon)} ${esc(mean(l.title))}</h2><p>${esc(t(l.dialog ? "lesson.dialogIntro" : "lesson.intro"))}</p></div>
     </div>
 
-    <div class="vocab-list">
+    ${l.dialog
+      ? dialogHTML(c, l)
+      : `<div class="vocab-list">
       ${l.items.map((it) => vocabHTML(c, it)).join("")}
-    </div>
+    </div>`}
 
     <div class="practice-bar">
       <button class="btn" id="goFlash">🃏 ${esc(t("lesson.flashcards"))}</button>
@@ -299,7 +301,7 @@ export function renderAbout(view) {
     { e: "🔊", t: { id: "Pelafalan Audio", en: "Audio Pronunciation", es: "Pronunciación de audio" }, d: { id: "Dengarkan setiap kata dengan text-to-speech native.", en: "Hear every word with native text-to-speech.", es: "Escucha cada palabra con voz nativa." } },
     { e: "🃏", t: { id: "Flashcard & Kuis", en: "Flashcards & Quizzes", es: "Tarjetas y cuestionarios" }, d: { id: "Belajar aktif dengan kartu balik dan kuis interaktif.", en: "Active recall with flip cards and interactive quizzes.", es: "Recuerdo activo con tarjetas y cuestionarios." } },
     { e: "🏅", t: { id: "Gamifikasi", en: "Gamification", es: "Gamificación" }, d: { id: "XP, level, hari beruntun, dan pencapaian membuat belajar seru.", en: "XP, levels, streaks and achievements keep you motivated.", es: "XP, niveles, rachas y logros te motivan." } },
-    { e: "🌍", t: { id: "12 Bahasa Dunia", en: "12 World Languages", es: "12 idiomas del mundo" }, d: { id: "Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi.", en: "English, Spanish, French, German, Japanese, Korean, Mandarin, Arabic, Italian, Portuguese, Russian, Hindi.", es: "Inglés, español, francés, alemán, japonés, coreano, mandarín, árabe, italiano, portugués, ruso, hindi." } },
+    { e: "🌍", t: { id: "20 Bahasa Dunia", en: "20 World Languages", es: "20 idiomas del mundo" }, d: { id: "Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai.", en: "English, Spanish, French, German, Japanese, Korean, Mandarin, Arabic, Italian, Portuguese, Russian, Hindi, Malay, Dutch, Swedish, Turkish, Tagalog, Vietnamese, Polish, Thai.", es: "Inglés, español, francés, alemán, japonés, coreano, mandarín, árabe, italiano, portugués, ruso, hindi, malayo, neerlandés, sueco, turco, tagalo, vietnamita, polaco, tailandés." } },
     { e: "🔐", t: { id: "Akun Aman (Opsional)", en: "Secure Accounts (Optional)", es: "Cuentas seguras (opcional)" }, d: { id: "Kata sandi di-hash (PBKDF2), tidak pernah disimpan apa adanya. Buat akun untuk menyimpan & menyinkronkan progres, atau tetap sebagai tamu.", en: "Passwords are hashed (PBKDF2), never stored as text. Create an account to save & sync progress, or stay a guest.", es: "Las contraseñas se procesan con hash (PBKDF2), nunca se guardan como texto. Crea una cuenta para guardar y sincronizar, o sigue como invitado." } },
   ];
   view.innerHTML = `

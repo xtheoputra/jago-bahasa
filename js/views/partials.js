@@ -79,6 +79,28 @@ export function vocabHTML(c, it) {
     </div>`;
 }
 
+/** Chat-style dialogue. `l.dialog` is an array of speaker tags ("A"/"B")
+ *  parallel to `l.items` — each item is one spoken line. TTS is wired by the
+ *  caller via wireSpeak() (each bubble carries a [data-speak]). */
+export function dialogHTML(c, l) {
+  return `<div class="dialog">${l.items
+    .map((it, k) => {
+      const who = (l.dialog && l.dialog[k]) === "B" ? "B" : "A";
+      const side = who === "B" ? "b" : "a";
+      return `
+      <div class="dialog__turn dialog__turn--${side}">
+        <span class="dialog__who dialog__who--${side}" aria-hidden="true">${who}</span>
+        <div class="dialog__bubble">
+          <div class="dialog__term ${c.cjk ? "cjk" : ""}" dir="${c.rtl ? "rtl" : "ltr"}">${esc(it.term)}</div>
+          ${it.reading ? `<div class="vocab__reading">${esc(it.reading)}</div>` : ""}
+          <div class="dialog__mean">${esc(mean(it.m))}</div>
+          <button class="speakbtn dialog__speak" data-speak="${esc(it.term)}" aria-label="🔊">🔊</button>
+        </div>
+      </div>`;
+    })
+    .join("")}</div>`;
+}
+
 export function wireSpeak(root, c) {
   $$("[data-speak]", root).forEach((b) => {
     b.addEventListener("click", (e) => {

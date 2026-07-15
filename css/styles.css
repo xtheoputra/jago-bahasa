@@ -320,6 +320,27 @@ button { font-family: inherit; }
 .vocab__meaning { font-weight: 700; }
 .vocab__ex { color: var(--text-dim); font-size: .86rem; margin-top: 3px; }
 
+/* ---- Conversation / dialogue (chat bubbles) ---- */
+.dialog { display: grid; gap: 12px; margin: 2px 0; }
+.dialog__turn { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
+.dialog__turn--b { flex-direction: row-reverse; }
+.dialog__who {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800; font-size: .82rem; color: #fff;
+}
+.dialog__who--a { background: linear-gradient(135deg, var(--brand), var(--brand-700)); }
+.dialog__who--b { background: linear-gradient(135deg, var(--accent), #ff8a3d); }
+.dialog__bubble {
+  max-width: min(82%, 640px); padding: 12px 14px; border-radius: 16px;
+  border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-1);
+}
+.dialog__turn--a .dialog__bubble { border-bottom-left-radius: 5px; }
+.dialog__turn--b .dialog__bubble { border-bottom-right-radius: 5px; background: var(--brand-soft); border-color: transparent; }
+.dialog__term { font-size: 1.15rem; font-weight: 800; line-height: 1.35; }
+.dialog__term.cjk { font-family: var(--font-cjk); }
+.dialog__mean { color: var(--text-dim); font-weight: 700; font-size: .9rem; margin-top: 3px; }
+.dialog__speak { margin-top: 8px; }
+
 /* ---- Dictionary / global search ---- */
 .dict-controls { padding: 14px; margin-bottom: 14px; display: grid; gap: 12px; }
 .dict-search {

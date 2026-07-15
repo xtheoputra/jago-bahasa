@@ -246,3 +246,70 @@ Catatan: belum diklik di perangkat asli; verifikasi lewat validasi struktural + 
 ---
 
 *Diperbarui — v2.5 2026-07-15 (dialog percakapan chat A–B di semua bahasa).*
+
+---
+
+## Pembaruan v2.6 — Belanja & Perjalanan (kosakata + kalimat) di Semua Bahasa (2026-07-15)
+
+Permintaan pengguna: *"perbanyak kosakatanya dan kalimatnya"*.
+
+### Konten (`js/data.js`)
+- **2 pelajaran bertema baru per bahasa (semua 20)**, tiap pelajaran **8 item** dan kaya kalimat contoh (5/8 ada `ex`):
+  - 🛍️ **`shop`** — Belanja & Harga (beli, uang, harga, mahal, murah, tunai, diskon, struk)
+  - 🧳 **`travel`** — Perjalanan & Penginapan (hotel, kamar, paspor, tiket, bagasi, bandara, kunci, reservasi)
+- Trilingual (id/en/es) + `reading` (romanisasi) untuk 7 skrip non-Latin (ja·ko·zh·ar·ru·hi·th); RTL untuk Arab.
+- Total konten kini **218 pelajaran / 1737 item / 730 contoh / 20 dialog** (dari 178/1417/530).
+
+### Validasi
+- Validator: **20 kursus, 218 pelajaran, 1737 item, 730 contoh** — 0 error, 0 warning (id unik, ≥4 item, trilingual, tiap `ex` lengkap, arti tiap pelajaran unik).
+- Uji fungsional: 40 pelajaran shop/travel resolvable (@8 item, arti unik); romanisasi lengkap 7 skrip; **1737 set opsi kuis semua tepat 4**; pencarian kamus (hotel→20, paspor→22, diskon→20, reservasi→22).
+- `node --check` OK; smoke test HTTP: aset kunci + `/js/data.js` → 200. SW `jb-v2.5.0` → **`jb-v2.6.0`**.
+
+Catatan: belum diklik di perangkat asli; verifikasi lewat validasi struktural + uji fungsional + smoke test HTTP.
+
+---
+
+*Diperbarui — v2.6 2026-07-15 (belanja & perjalanan di semua bahasa: +40 pelajaran, +320 kata, +200 kalimat).*
+
+---
+
+## Pembaruan v2.7 — Kesehatan & Cuaca di Semua Bahasa (2026-07-15)
+
+Permintaan pengguna: *"perbanyak lagi"*.
+
+### Konten (`js/data.js`)
+- **2 pelajaran bertema baru per bahasa (semua 20)**, @8 item, kaya kalimat contoh:
+  - 🏥 **`health`** — Kesehatan & Darurat (dokter, rumah sakit, obat, sakit, sakit kepala, apotek, darurat, demam)
+  - 🌤️ **`weather`** — Cuaca (panas, dingin, hujan, matahari, angin, awan, salju, cuaca)
+- Trilingual (id/en/es) + `reading` (romanisasi) untuk 7 skrip non-Latin; RTL untuk Arab.
+- Total konten kini **258 pelajaran / 2057 item / 930 contoh / 20 dialog** (dari 218/1737/730).
+
+### Validasi
+- Validator: **20 kursus, 258 pelajaran, 2057 item, 930 contoh** — 0 error, 0 warning.
+- Uji fungsional: 40 pelajaran health/weather (@8 item, arti unik), romanisasi lengkap 7 skrip.
+- `node --check` OK; smoke test HTTP: aset kunci → 200. SW `jb-v2.6.0` → **`jb-v2.7.0`**.
+
+---
+
+*Diperbarui — v2.7 2026-07-15 (kesehatan & cuaca di semua bahasa: +40 pelajaran, +320 kata, +200 kalimat).*
+
+---
+
+## Pembaruan v2.8 — Dialog Restoran + Warna + Tubuh di Semua Bahasa (2026-07-15)
+
+Permintaan pengguna: *"perbanyak lagi percakapan dan isi"*.
+
+### Konten (`js/data.js`) — 3 pelajaran baru per bahasa (semua 20)
+- **Percakapan:** 🍽️ **`convo2`** — Percakapan: Di Restoran (dialog chat A–B 6 baris: minta menu → pesan minum → pesan ayam → tawaran lain → minta bon → penutup). Ini dialog ke-2 tiap bahasa → total **40 dialog**.
+- **Isi (kosakata):** 🎨 **`color`** — Warna (8 warna) · 🧍 **`body`** — Tubuh (8 bagian tubuh).
+- Trilingual (id/en/es) + `reading` untuk 7 skrip non-Latin; RTL Arab. Contoh kalimat pada warna (merah/biru) & tubuh (tangan/perut).
+- Total konten kini **318 pelajaran / 2497 item / 1010 contoh / 40 dialog** (dari 258/2057/930/20).
+
+### Validasi
+- Validator: **20 kursus, 318 pelajaran, 2497 item, 1010 contoh, 40 dialog** — 0 error, 0 warning.
+- Uji fungsional: 20 `convo2` (pola A/B ababab, 6 baris), 20 `color` + 20 `body` (@8, arti unik); romanisasi lengkap 7 skrip; **2497 set opsi kuis semua tepat 4**.
+- `node --check` OK; smoke test HTTP: aset kunci → 200. SW `jb-v2.7.0` → **`jb-v2.8.0`**.
+
+---
+
+*Diperbarui — v2.8 2026-07-15 (dialog restoran + warna + tubuh di semua bahasa: +60 pelajaran, +440 kata, +20 dialog).*

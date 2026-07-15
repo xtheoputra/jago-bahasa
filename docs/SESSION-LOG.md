@@ -187,3 +187,62 @@ Permintaan pengguna: *"lanjutkan apa yang dapat ditambahkan / ide"* → dipilih 
 ---
 
 *Diperbarui — v2.3 2026-07-14 (grammar+tema, Kamus, SRS+Cloze).*
+
+---
+
+## Pembaruan v2.4 — 8 Bahasa Baru + Perluasan 10 Bahasa Tipis (2026-07-15)
+
+Permintaan pengguna: *"menambah bahasa dan pelajaran serta perbaiki jika ada bug"*. Dipilih (via konfirmasi): **tambah 8 bahasa baru** dan **perdalam semua 10 bahasa yang masih tipis**.
+
+### Bahasa baru (8 kursus, aksara Latin + Thai)
+Ditambahkan ke `COURSES` di `js/data.js`, masing-masing **6 pelajaran** (`greet`, `num`, `ess`, `food`, `city`, `family`) trilingual (id/en/es) dengan kalimat contoh pada tema `food` & `city`:
+- 🇲🇾 **Melayu** (`ms`, ms-MY) · 🇳🇱 **Belanda** (`nl`, nl-NL) · 🇸🇪 **Swedia** (`sv`, sv-SE) · 🇹🇷 **Turki** (`tr`, tr-TR)
+- 🇵🇭 **Tagalog** (`tl`, fil-PH) · 🇻🇳 **Vietnam** (`vi`, vi-VN) · 🇵🇱 **Polandia** (`pl`, pl-PL) · 🇹🇭 **Thai** (`th`, th-TH — tiap item ber-`reading` romanisasi RTGS)
+
+### Perluasan 10 bahasa tipis (dari 3 → 7 pelajaran)
+Tiap kursus berikut ditambah **4 pelajaran** (`food`, `city`, `family`, `time`) dengan contoh (yang non-Latin ber-`reading`):
+- Latin: `es`, `fr`, `de`, `it`, `pt`
+- Non-Latin: `ja` (romaji), `zh` (pinyin), `ar` (RTL + transliterasi), `ru`, `hi`
+
+### Bug/robustness
+- Tidak ditemukan bug fatal di kode (view/state/router bersih: cleanup listener via AbortSignal, escaping XSS, bonus kuis anti-farming).
+- Batasan yang dijaga saat menulis konten: tiap pelajaran **≥4 item** (kuis butuh 4 opsi) & **tanpa arti duplikat per pelajaran** (agar opsi kuis tak ambigu) — divalidasi otomatis, 0 pelanggaran.
+
+### Validasi
+- Validator struktural (ESM): **20 kursus, 158 pelajaran, 1297 item, 530 contoh** — 0 error, 0 warning (cek: id unik, ≥4 item, trilingual lengkap, tiap `ex` lengkap, tiap `level` punya `diff.*` di 3 UI, tak ada arti duplikat/term duplikat per pelajaran).
+- Uji fungsional: `findCourse`/`findLesson` untuk semua bahasa/pelajaran baru; simulasi **1297 set opsi kuis** semuanya tepat 4 opsi; romanisasi Thai lengkap; flag RTL Arab; pencarian kamus (`taksi`→17, `stasiun`→20).
+- `node --check` OK; smoke test HTTP: `/`, `/js/data.js`, `/js/i18n.js`, `/js/views/*.js`, `/sw.js`, `/manifest.webmanifest`, `/api/health` → semua 200.
+- Docs diperbarui: kartu "20 Bahasa Dunia" di Tentang (`learn.js`), tabel fitur `README.md`. SW `VERSION` `jb-v2.3.0` → **`jb-v2.4.0`** agar cache `data.js`/`i18n.js` ter-refresh di klien lama.
+
+Catatan: belum diklik di perangkat asli; verifikasi lewat validasi struktural + uji fungsional + smoke test HTTP. Total kini **20 bahasa · 158 pelajaran · 1297 kosakata**.
+
+---
+
+*Diperbarui — v2.4 2026-07-15 (8 bahasa baru + perluasan 10 bahasa tipis).*
+
+---
+
+## Pembaruan v2.5 — Dialog Percakapan (chat A–B) di Semua Bahasa (2026-07-15)
+
+Permintaan pengguna: *"selain kosakata tambahkan kalimat percakapan"* → dipilih: **dialog A–B bergaya chat** sebagai pelajaran baru, di **semua 20 bahasa**.
+
+### Fitur (kode)
+- **Model data:** pelajaran kini boleh punya `dialog: ["A","B",...]` yang paralel dengan `items` — tiap `item` adalah satu baris ucapan, tiap tag menandai penutur. Sumber tunggal (tanpa duplikasi teks): baris dialog otomatis jadi flashcard, kuis, dan masuk indeks Kamus.
+- **Render:** `dialogHTML()` baru di `js/views/partials.js` menampilkan gelembung chat (A kiri, B kanan) dengan avatar penutur, romanisasi (bila ada), arti, dan tombol TTS per baris. `renderLesson()` (`js/views/learn.js`) otomatis menampilkan dialog bila pelajaran punya `dialog` (menggantikan daftar kosakata), plus tetap ada tombol Flashcard/Kuis.
+- **CSS:** komponen `.dialog*` di `css/styles.css` (memakai token desain yang ada, sadar tema terang/gelap, RTL & font CJK aman).
+- **i18n:** kunci `lesson.convo` & `lesson.dialogIntro` (id/en/es).
+
+### Konten
+- **20 pelajaran "🗣️ Percakapan: Perkenalan"** (satu per bahasa), tiap dialog **6 baris** A–B (sapaan → apa kabar → balasan → kenalan → salam pisah), trilingual (id/en/es), dengan `reading` (romanisasi) untuk 7 skrip non-Latin (ja·ko·zh·ar·ru·hi·th) dan RTL untuk Arab.
+
+### Validasi
+- Validator (diperluas cek dialog): **20 kursus, 178 pelajaran, 1417 item, 530 contoh, 20 dialog** — 0 error, 0 warning (dialog: panjang == items, tiap tag "A"/"B"; arti tiap baris unik → opsi kuis tak ambigu).
+- Uji fungsional: 20 pelajaran `convo` resolvable; pola A/B benar (ababab); romanisasi lengkap di 7 skrip; kunci i18n ada di 3 UI; **1417 set opsi kuis semua tepat 4 opsi**.
+- `node --check` OK; smoke test HTTP: `/`, `data.js`, `i18n.js`, `views/learn.js`, `views/partials.js`, `css/styles.css`, `sw.js` → semua 200.
+- SW `VERSION` `jb-v2.4.0` → **`jb-v2.5.0`** (refresh cache CSS/JS/data). README ditambah baris fitur "Dialog percakapan".
+
+Catatan: belum diklik di perangkat asli; verifikasi lewat validasi struktural + uji fungsional + smoke test HTTP.
+
+---
+
+*Diperbarui — v2.5 2026-07-15 (dialog percakapan chat A–B di semua bahasa).*

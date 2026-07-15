@@ -9,8 +9,9 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 
 | | |
 |---|---|
-| 🌍 **12 bahasa dunia** | Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi |
+| 🌍 **20 bahasa dunia** | Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai |
 | 🃏 **Flashcard interaktif** | Kartu balik dengan animasi 3D + navigasi keyboard |
+| 🗣️ **Dialog percakapan** | Pelajaran "Percakapan" bergaya chat (A/B) dengan TTS & arti tiap baris di semua bahasa |
 | 🧠 **Kuis otomatis** | Pilihan ganda (acak kriptografis) dengan skor, cincin progres, dan XP |
 | 🔊 **Pelafalan audio** | Text-to-speech native untuk setiap kata |
 | 🏅 **Gamifikasi** | XP, level, hari beruntun (streak), dan pencapaian |

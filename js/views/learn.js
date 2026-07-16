@@ -11,9 +11,27 @@ import {
 import { navigate, rerender } from "../core/router.js";
 import { session } from "../auth/session.js";
 import { I18N } from "../i18n.js";
+import { SCRIPTS } from "../scripts.js";
+import {
+  ACCENT_KEYS, getAccent, setAccent, getTextScale, setTextScale, getDyslexia, setDyslexia, requestReminder,
+} from "../chrome.js";
 
 const t = (...a) => I18N.t(...a);
 const GUEST_BANNER_KEY = "jb.guestBanner.dismissed";
+
+/** Small circular progress ring for the daily XP goal. */
+function dailyRingHTML(daily) {
+  const r = 34,
+    circ = 2 * Math.PI * r;
+  return `
+    <svg class="daily-ring" viewBox="0 0 80 80" aria-hidden="true">
+      <circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--surface-3)" stroke-width="8"/>
+      <circle cx="40" cy="40" r="${r}" fill="none" stroke="url(#dg)" stroke-width="8" stroke-linecap="round"
+        stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - daily.pct / 100)}" transform="rotate(-90 40 40)"/>
+      <defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#ff9f43"/></linearGradient></defs>
+      <text x="40" y="46" text-anchor="middle" font-size="16" font-weight="800" fill="var(--text)">${daily.pct}%</text>
+    </svg>`;
+}
 
 /* =====================================================================
    HOME
@@ -52,6 +70,8 @@ export function renderHome(view) {
   const popular = COURSES.slice(0, 4);
   const srsPool = store.srsPool();
   const srsDue = srsPool.length ? store.srsDue(srsPool).length : 0;
+  const daily = store.dailyStatus();
+  const mistakes = store.mistakeCount();
 
   const week = store.lastNDates(7);
   const streakCells = week
@@ -78,6 +98,7 @@ export function renderHome(view) {
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-size:2rem">🔥</span>
             <div><div class="big">${st.streak}</div><div style="opacity:.9;font-weight:700">${esc(t("home.streak"))}</div></div>
+            ${store.getFreezes() ? `<div style="margin-left:auto;text-align:center" title="${esc(t("stats.freezes"))}"><div style="font-size:1.3rem">🧊</div><div style="font-weight:800">×${store.getFreezes()}</div></div>` : ""}
           </div>
           <div class="streak-grid">${streakCells}</div>
         </div>
@@ -89,6 +110,18 @@ export function renderHome(view) {
       <div class="card stat"><div class="num"><span class="ico">🎓</span>${store.doneCount()}<span style="color:var(--text-faint);font-size:1rem;font-weight:600">/${store.totalLessons()}</span></div><div class="lbl">${esc(t("stat.lessons"))}</div></div>
       <div class="card stat"><div class="num"><span class="ico">📖</span>${store.wordsLearned()}</div><div class="lbl">${esc(t("stat.words"))}</div></div>
       <div class="card stat"><div class="num"><span class="ico">🏅</span>${lvl}</div><div class="lbl">${esc(t("stat.level"))}</div></div>
+    </div>
+
+    <div class="card daily-card" style="margin-top:20px">
+      ${dailyRingHTML(daily)}
+      <div class="daily-card__txt">
+        <strong>🎯 ${esc(t("daily.title"))}</strong>
+        <span>${daily.xp} / ${daily.goal} XP${daily.hit ? " · " + esc(t("daily.hit")) : ""}</span>
+      </div>
+      <div class="daily-card__actions">
+        <a class="btn btn--sm btn--accent" href="#/mix">${esc(t("mix.go"))}</a>
+        ${mistakes ? `<a class="btn btn--sm" href="#/mistakes">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
+      </div>
     </div>
 
     ${srsPool.length ? `
@@ -147,6 +180,7 @@ export function renderCourse(view, [cid]) {
   store.setLastCourse(c.id);
   const st = store.getState();
   const p = store.courseProgress(c);
+  const script = SCRIPTS.find((s) => s.lang === c.id);
 
   view.innerHTML = `
     <nav class="crumb"><a href="#/courses">${esc(t("course.back"))}</a><span class="sep">/</span><span>${esc(mean(c.name))}</span></nav>
@@ -161,6 +195,12 @@ export function renderCourse(view, [cid]) {
         <div class="progress"><i style="width:${p.pct}%"></i></div>
       </div>
     </div>
+    ${script ? `
+    <a class="card review-cta" href="#/script/${script.id}" style="margin-bottom:6px">
+      <div class="review-cta__ico" aria-hidden="true">🔡</div>
+      <div class="review-cta__txt"><strong>${esc(t("script.title"))}</strong><span>${esc(t("script.sub"))}</span></div>
+      <span class="btn btn--sm">${esc(t("home.reviewGo"))} →</span>
+    </a>` : ""}
     <div class="section-head"><div><h2 style="font-size:1.2rem">${esc(t("course.lessons"))}</h2></div></div>
     <div class="grid" style="gap:12px">
       ${c.lessons.map((l, i) => lessonRowHTML(c, l, i, st)).join("")}
@@ -198,20 +238,44 @@ export function renderLesson(view, [cid, lid]) {
     ${l.dialog
       ? dialogHTML(c, l)
       : `<div class="vocab-list">
-      ${l.items.map((it) => vocabHTML(c, it)).join("")}
+      ${l.items.map((it, i) => vocabHTML(c, it, `${c.id}/${l.id}#${i}`, store.isFav(`${c.id}/${l.id}#${i}`))).join("")}
     </div>`}
 
     <div class="practice-bar">
       <button class="btn" id="goFlash">🃏 ${esc(t("lesson.flashcards"))}</button>
       <button class="btn btn--accent" id="goQuiz">🧠 ${esc(t("lesson.quiz"))}</button>
+      <button class="btn" id="goListen">👂 ${esc(t("lesson.listen"))}</button>
+      <button class="btn" id="goMatch">🔗 ${esc(t("lesson.match"))}</button>
+      <button class="btn" id="goAudio">🎧 ${esc(t("lesson.audio"))}</button>
+      ${!l.dialog ? `<button class="btn" id="goType">⌨️ ${esc(t("lesson.type"))}</button>` : ""}
+      ${!l.dialog ? `<button class="btn" id="goSpeak">🎤 ${esc(t("lesson.speak"))}</button>` : ""}
+      ${!l.dialog && !c.cjk && c.id !== "th" && l.items.some((it) => it.ex) ? `<button class="btn" id="goBuild">🧩 ${esc(t("lesson.build"))}</button>` : ""}
       ${l.items.some((it) => it.ex) ? `<button class="btn" id="goCloze">✍️ ${esc(t("lesson.cloze"))}</button>` : ""}
       <button class="btn btn--ghost" id="markDone" ${done ? "disabled" : ""}>${done ? "✓ " + esc(t("lesson.done")) : esc(t("lesson.done"))}</button>
     </div>
   `;
 
   wireSpeak(view, c);
+  $$("[data-fav]", view).forEach((b) => {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      const on = store.favToggle(b.dataset.fav);
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.textContent = on ? "★" : "☆";
+    };
+  });
   $("#goFlash").onclick = () => navigate(`#/flashcards/${c.id}/${l.id}`);
   $("#goQuiz").onclick = () => navigate(`#/quiz/${c.id}/${l.id}`);
+  $("#goListen").onclick = () => navigate(`#/listen/${c.id}/${l.id}`);
+  $("#goMatch").onclick = () => navigate(`#/match/${c.id}/${l.id}`);
+  $("#goAudio").onclick = () => navigate(`#/audio/${c.id}/${l.id}`);
+  const typeBtn = $("#goType");
+  if (typeBtn) typeBtn.onclick = () => navigate(`#/type/${c.id}/${l.id}`);
+  const speakBtn = $("#goSpeak");
+  if (speakBtn) speakBtn.onclick = () => navigate(`#/speak/${c.id}/${l.id}`);
+  const buildBtn = $("#goBuild");
+  if (buildBtn) buildBtn.onclick = () => navigate(`#/build/${c.id}/${l.id}`);
   const clozeBtn = $("#goCloze");
   if (clozeBtn) clozeBtn.onclick = () => navigate(`#/cloze/${c.id}/${l.id}`);
   $("#markDone").onclick = () => {
@@ -228,10 +292,20 @@ export function renderLesson(view, [cid, lid]) {
 const ACHIEVEMENTS = [
   { id: "first", emoji: "🌱", name: { id: "Langkah Pertama", en: "First Step", es: "Primer paso" }, desc: { id: "Selesaikan 1 pelajaran", en: "Finish 1 lesson", es: "Termina 1 lección" }, test: () => store.doneCount() >= 1 },
   { id: "five", emoji: "🔥", name: { id: "Pemanasan", en: "Warming Up", es: "Calentando" }, desc: { id: "Selesaikan 5 pelajaran", en: "Finish 5 lessons", es: "Termina 5 lecciones" }, test: () => store.doneCount() >= 5 },
+  { id: "done25", emoji: "🎓", name: { id: "Rajin Belajar", en: "Dedicated", es: "Dedicado" }, desc: { id: "Selesaikan 25 pelajaran", en: "Finish 25 lessons", es: "Termina 25 lecciones" }, test: () => store.doneCount() >= 25 },
   { id: "poly", emoji: "🌍", name: { id: "Poliglot", en: "Polyglot", es: "Políglota" }, desc: { id: "Coba 3 bahasa berbeda", en: "Try 3 languages", es: "Prueba 3 idiomas" }, test: () => store.languagesTouched() >= 3 },
+  { id: "poly5", emoji: "🗺️", name: { id: "Penjelajah", en: "Explorer", es: "Explorador" }, desc: { id: "Coba 5 bahasa berbeda", en: "Try 5 languages", es: "Prueba 5 idiomas" }, test: () => store.languagesTouched() >= 5 },
   { id: "streak3", emoji: "📅", name: { id: "Konsisten", en: "Consistent", es: "Constante" }, desc: { id: "Beruntun 3 hari", en: "3-day streak", es: "Racha de 3 días" }, test: () => store.getState().streak >= 3 },
+  { id: "streak7", emoji: "🗓️", name: { id: "Seminggu Penuh", en: "Full Week", es: "Semana completa" }, desc: { id: "Beruntun 7 hari", en: "7-day streak", es: "Racha de 7 días" }, test: () => store.getState().streak >= 7 },
+  { id: "streak30", emoji: "🏔️", name: { id: "Sebulan Kokoh", en: "Month Strong", es: "Un mes fuerte" }, desc: { id: "Beruntun 30 hari", en: "30-day streak", es: "Racha de 30 días" }, test: () => store.getState().streak >= 30 },
   { id: "words50", emoji: "📚", name: { id: "Kutu Buku", en: "Bookworm", es: "Ratón de biblioteca" }, desc: { id: "Pelajari 50 kata", en: "Learn 50 words", es: "Aprende 50 palabras" }, test: () => store.wordsLearned() >= 50 },
+  { id: "words250", emoji: "📖", name: { id: "Perbendaharaan", en: "Vocabulary Vault", es: "Léxico rico" }, desc: { id: "Pelajari 250 kata", en: "Learn 250 words", es: "Aprende 250 palabras" }, test: () => store.wordsLearned() >= 250 },
   { id: "lvl5", emoji: "🏆", name: { id: "Sang Juara", en: "Champion", es: "Campeón" }, desc: { id: "Capai Level 5", en: "Reach Level 5", es: "Alcanza nivel 5" }, test: () => store.levelFromXp(store.getState().xp) >= 5 },
+  { id: "lvl10", emoji: "👑", name: { id: "Legenda", en: "Legend", es: "Leyenda" }, desc: { id: "Capai Level 10", en: "Reach Level 10", es: "Alcanza nivel 10" }, test: () => store.levelFromXp(store.getState().xp) >= 10 },
+  { id: "perfect", emoji: "💯", name: { id: "Nilai Sempurna", en: "Perfect Score", es: "Puntuación perfecta" }, desc: { id: "Raih 100% di sebuah kuis", en: "Score 100% on a quiz", es: "Saca 100% en un cuestionario" }, test: () => store.counter("perfect") >= 1 },
+  { id: "typist", emoji: "⌨️", name: { id: "Juru Ketik", en: "Typist", es: "Mecanógrafo" }, desc: { id: "Ketik 50 kata dengan benar", en: "Type 50 words correctly", es: "Escribe 50 palabras" }, test: () => store.counter("typed") >= 50 },
+  { id: "matcher", emoji: "🔗", name: { id: "Ahli Jodoh", en: "Matchmaker", es: "Emparejador" }, desc: { id: "Menangkan 5 game Jodohkan", en: "Win 5 Match games", es: "Gana 5 juegos de emparejar" }, test: () => store.counter("matched") >= 5 },
+  { id: "goalDays", emoji: "🎯", name: { id: "Disiplin", en: "Disciplined", es: "Disciplinado" }, desc: { id: "Capai target harian 5 hari", en: "Hit your daily goal 5 days", es: "Cumple tu meta diaria 5 días" }, test: () => store.counter("goalDays") >= 5 },
 ];
 
 export function renderProgress(view) {
@@ -242,10 +316,18 @@ export function renderProgress(view) {
 
   const srsPool = store.srsPool();
   const srsDue = srsPool.length ? store.srsDue(srsPool).length : 0;
+  const daily = store.dailyStatus();
+  const mistakes = store.mistakeCount();
+  const favs = store.favCount();
+  const rem = store.getReminder();
+  const unlocked = ACHIEVEMENTS.filter((a) => a.test()).length;
 
   view.innerHTML = `
     <div class="section-head"><div><h2>${esc(t("progress.title"))}</h2><p>${esc(t("progress.sub"))}</p></div>
-      ${srsPool.length ? `<a class="btn btn--accent" href="#/review" style="white-space:nowrap">🔁 ${esc(t("review.title"))}${srsDue ? ` · ${srsDue}` : ""}</a>` : ""}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn" href="#/stats" style="white-space:nowrap">📊 ${esc(t("stats.title"))}</a>
+        ${srsPool.length ? `<a class="btn btn--accent" href="#/review" style="white-space:nowrap">🔁 ${esc(t("review.title"))}${srsDue ? ` · ${srsDue}` : ""}</a>` : ""}
+      </div>
     </div>
 
     <div class="card" style="padding:22px;margin-bottom:20px">
@@ -264,13 +346,31 @@ export function renderProgress(view) {
       </div>
     </div>
 
+    <div class="card daily-card" style="margin-bottom:20px">
+      ${dailyRingHTML(daily)}
+      <div class="daily-card__txt">
+        <strong>🎯 ${esc(t("daily.title"))}</strong>
+        <span>${daily.xp} / ${daily.goal} XP${daily.hit ? " · " + esc(t("daily.hit")) : ""}</span>
+        <div class="goal-picker" id="goalPicker">
+          <button class="goal-opt ${daily.goal === 20 ? "on" : ""}" data-goal="20">${esc(t("daily.relaxed"))} · 20</button>
+          <button class="goal-opt ${daily.goal === 50 ? "on" : ""}" data-goal="50">${esc(t("daily.normal"))} · 50</button>
+          <button class="goal-opt ${daily.goal === 100 ? "on" : ""}" data-goal="100">${esc(t("daily.serious"))} · 100</button>
+        </div>
+      </div>
+      <div class="daily-card__actions">
+        <a class="btn btn--sm btn--accent" href="#/mix">${esc(t("mix.go"))}</a>
+        ${mistakes ? `<a class="btn btn--sm" href="#/mistakes">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
+        ${favs ? `<a class="btn btn--sm" href="#/favorites">⭐ ${esc(t("fav.title"))} · ${favs}</a>` : ""}
+      </div>
+    </div>
+
     ${any ? `
     <div class="section-head"><h2 style="font-size:1.2rem">${esc(t("progress.byLang"))}</h2></div>
     <div class="grid" style="gap:12px;margin-bottom:24px">
       ${COURSES.filter((c) => store.courseProgress(c).done > 0).map(progRowHTML).join("") || `<p style="color:var(--text-dim)">${esc(t("progress.none"))}</p>`}
     </div>` : `<div class="empty"><div class="emoji">🚀</div><p>${esc(t("progress.none"))}</p><a class="btn" href="#/courses" style="margin-top:12px">${esc(t("home.browse"))}</a></div>`}
 
-    <div class="section-head"><h2 style="font-size:1.2rem">${esc(t("progress.ach"))}</h2></div>
+    <div class="section-head"><h2 style="font-size:1.2rem">${esc(t("progress.ach"))} <span style="color:var(--text-faint);font-weight:700;font-size:.95rem">${unlocked}/${ACHIEVEMENTS.length}</span></h2></div>
     <div class="ach-grid">
       ${ACHIEVEMENTS.map((a) => {
         const ok = a.test();
@@ -278,10 +378,112 @@ export function renderProgress(view) {
       }).join("")}
     </div>
 
+    <div class="section-head" style="margin-top:26px"><h2 style="font-size:1.2rem">${esc(t("settings.title"))}</h2></div>
+    <div class="card" style="padding:6px 18px">
+      <div class="set-row">
+        <span>🎨 ${esc(t("settings.accent"))}</span>
+        <div class="accent-swatches" id="accentPick">
+          ${ACCENT_KEYS.map((k) => `<button class="accent-sw accent-sw--${k} ${getAccent() === k ? "on" : ""}" data-accent="${k}" aria-label="${k}"></button>`).join("")}
+        </div>
+      </div>
+      <div class="set-row">
+        <span>🔠 ${esc(t("settings.textSize"))}</span>
+        <div class="seg" id="textSizePick">
+          <button class="seg-opt ${getTextScale() === "normal" ? "on" : ""}" data-size="normal">${esc(t("settings.normal"))}</button>
+          <button class="seg-opt ${getTextScale() === "large" ? "on" : ""}" data-size="large">${esc(t("settings.large"))}</button>
+        </div>
+      </div>
+      <div class="set-row">
+        <span>🔤 ${esc(t("settings.dyslexia"))}</span>
+        <label class="switch"><input type="checkbox" id="dysToggle" ${getDyslexia() ? "checked" : ""}><span class="switch__track"></span></label>
+      </div>
+      <div class="set-row">
+        <span>🔔 ${esc(t("settings.reminder"))}<br><small style="color:var(--text-faint);font-weight:600">${esc(t("settings.reminderNote"))}</small></span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="time" id="remTime" value="${esc(rem.time)}" class="time-input">
+          <label class="switch"><input type="checkbox" id="remToggle" ${rem.enabled ? "checked" : ""}><span class="switch__track"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head" style="margin-top:26px"><h2 style="font-size:1.2rem">${esc(t("data.title"))}</h2></div>
+    <div class="card" style="padding:18px">
+      <p style="color:var(--text-dim);margin:0 0 12px">${esc(t("data.sub"))}</p>
+      <div class="practice-bar" style="margin:0">
+        <button class="btn btn--sm" id="exportBtn">${esc(t("data.export"))}</button>
+        <button class="btn btn--sm" id="importBtn">${esc(t("data.import"))}</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden />
+      </div>
+    </div>
+
     <div style="margin-top:30px;text-align:center">
       <button class="btn btn--ghost btn--sm" id="resetBtn">🗑️ ${esc(t("progress.reset"))}</button>
     </div>
   `;
+
+  $$("#goalPicker .goal-opt", view).forEach((b) => {
+    b.onclick = () => {
+      store.setDailyGoal(+b.dataset.goal);
+      rerender();
+    };
+  });
+
+  // appearance + reminder settings
+  $$("#accentPick .accent-sw", view).forEach((b) => {
+    b.onclick = () => {
+      setAccent(b.dataset.accent);
+      $$("#accentPick .accent-sw", view).forEach((x) => x.classList.toggle("on", x === b));
+    };
+  });
+  $$("#textSizePick .seg-opt", view).forEach((b) => {
+    b.onclick = () => {
+      setTextScale(b.dataset.size);
+      $$("#textSizePick .seg-opt", view).forEach((x) => x.classList.toggle("on", x === b));
+    };
+  });
+  $("#dysToggle", view).onchange = (e) => setDyslexia(e.target.checked);
+  const remToggle = $("#remToggle", view),
+    remTime = $("#remTime", view);
+  async function updateReminder() {
+    const res = await requestReminder(remToggle.checked, remTime.value);
+    if (remToggle.checked && !res.enabled) {
+      remToggle.checked = false;
+      toast(t("settings.reminderDenied"));
+    } else if (res.enabled) {
+      toast(t("settings.reminderOn"));
+    }
+  }
+  remToggle.onchange = updateReminder;
+  remTime.onchange = () => {
+    if (remToggle.checked) updateReminder();
+  };
+
+  $("#exportBtn").onclick = () => {
+    const blob = new Blob([store.exportData()], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jago-bahasa-progress.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast(t("data.exported"));
+  };
+  const importFile = $("#importFile");
+  $("#importBtn").onclick = () => importFile.click();
+  importFile.onchange = () => {
+    const file = importFile.files && importFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const res = store.importData(String(reader.result));
+      toast(res.ok ? t("data.imported") : t("data.importErr"));
+      if (res.ok) rerender();
+    };
+    reader.onerror = () => toast(t("data.importErr"));
+    reader.readAsText(file);
+  };
 
   $("#resetBtn").onclick = () => {
     if (confirm(t("progress.resetConfirm"))) {
@@ -290,6 +492,93 @@ export function renderProgress(view) {
       rerender();
     }
   };
+}
+
+/* =====================================================================
+   STATS & INSIGHTS
+   ===================================================================== */
+export function renderStats(view) {
+  const st = store.getState();
+  const hist = st.xpHistory || {};
+
+  // Activity heatmap — last 26 weeks, coloured by XP earned that day.
+  const DAYS = 182;
+  const dates = store.lastNDates(DAYS);
+  const bucket = (xp) => (xp <= 0 ? 0 : xp < 20 ? 1 : xp < 50 ? 2 : xp < 100 ? 3 : 4);
+  const firstDow = new Date(dates[0]).getDay();
+  const cells = [];
+  for (let b = 0; b < firstDow; b++) cells.push(`<span class="hm-cell hm-blank"></span>`);
+  for (const d of dates) {
+    const xp = hist[d] || 0;
+    cells.push(`<span class="hm-cell hm-${bucket(xp)}" title="${esc(d)} · ${xp} XP"></span>`);
+  }
+  const activeCount = dates.filter((d) => (st.activeDays || []).includes(d)).length;
+
+  // XP trend — last 14 days as bars.
+  const trend = store.xpTrend(14);
+  const maxT = Math.max(1, ...trend.map((d) => d.xp));
+
+  // Accuracy per practice mode.
+  const MODES = [
+    ["quiz", "🧠", "lesson.quiz"], ["type", "⌨️", "lesson.type"], ["listen", "👂", "lesson.listen"],
+    ["speak", "🎤", "lesson.speak"], ["build", "🧩", "lesson.build"], ["mix", "🎲", "mix.title"],
+    ["mistakes", "🧯", "mistakes.title"], ["fav", "⭐", "fav.title"],
+  ];
+  const accRows = MODES.map(([m, e, k]) => ({ e, k, a: store.accuracy(m) })).filter((r) => r.a);
+
+  // Words per language.
+  const wbc = store.wordsByCourse();
+  const langRows = COURSES.filter((c) => wbc[c.id]).sort((a, b) => wbc[b.id] - wbc[a.id]);
+  const maxW = Math.max(1, ...langRows.map((c) => wbc[c.id]));
+
+  const anyData = activeCount > 0 || st.xp > 0;
+
+  view.innerHTML = `
+    <nav class="crumb"><a href="#/progress">‹ ${esc(t("progress.title"))}</a></nav>
+    <div class="section-head"><div><span class="eyebrow">📊 ${esc(t("stats.title"))}</span><h2>${esc(t("stats.title"))}</h2><p>${esc(t("stats.sub"))}</p></div></div>
+
+    ${!anyData ? `<div class="empty"><div class="emoji">📊</div><p>${esc(t("progress.none"))}</p><a class="btn" href="#/courses" style="margin-top:12px">${esc(t("home.browse"))}</a></div>` : ""}
+
+    <div class="stats" style="margin-bottom:20px">
+      <div class="card stat"><div class="num">🏆 ${store.getBestStreak()}</div><div class="lbl">${esc(t("stats.best"))}</div></div>
+      <div class="card stat"><div class="num">🧊 ${store.getFreezes()}</div><div class="lbl">${esc(t("stats.freezes"))}</div></div>
+      <div class="card stat"><div class="num">📅 ${activeCount}</div><div class="lbl">${esc(t("stats.activeDays"))}</div></div>
+      <div class="card stat"><div class="num">💯 ${store.counter("perfect")}</div><div class="lbl">${esc(t("stats.perfect"))}</div></div>
+    </div>
+
+    <div class="card" style="padding:18px;margin-bottom:20px;overflow-x:auto">
+      <h3 style="font-size:1.05rem;margin:0 0 12px">🗓️ ${esc(t("stats.heatmap"))}</h3>
+      <div class="heatmap">${cells.join("")}</div>
+      <div class="hm-legend">${esc(t("stats.less"))} <span class="hm-cell hm-0"></span><span class="hm-cell hm-1"></span><span class="hm-cell hm-2"></span><span class="hm-cell hm-3"></span><span class="hm-cell hm-4"></span> ${esc(t("stats.more"))}</div>
+    </div>
+
+    <div class="card" style="padding:18px;margin-bottom:20px">
+      <h3 style="font-size:1.05rem;margin:0 0 12px">📈 ${esc(t("stats.trend"))}</h3>
+      <div class="trend">${trend.map((d) => `<div class="trend-bar" title="${esc(d.date)} · ${d.xp} XP"><i style="height:${Math.round((d.xp / maxT) * 100)}%"></i></div>`).join("")}</div>
+    </div>
+
+    ${accRows.length ? `
+    <div class="card" style="padding:18px;margin-bottom:20px">
+      <h3 style="font-size:1.05rem;margin:0 0 12px">🎯 ${esc(t("stats.accuracy"))}</h3>
+      ${accRows.map((r) => `
+        <div class="bar-row">
+          <span class="bar-row__lbl">${r.e} ${esc(t(r.k))}</span>
+          <div class="progress" style="flex:1"><i style="width:${r.a.pct}%"></i></div>
+          <span class="bar-row__val">${r.a.pct}% <small>(${r.a.ok}/${r.a.tries})</small></span>
+        </div>`).join("")}
+    </div>` : ""}
+
+    ${langRows.length ? `
+    <div class="card" style="padding:18px;margin-bottom:20px">
+      <h3 style="font-size:1.05rem;margin:0 0 12px">🌍 ${esc(t("stats.byLang"))}</h3>
+      ${langRows.map((c) => `
+        <div class="bar-row">
+          <span class="bar-row__lbl">${esc(c.flag)} ${esc(mean(c.name))}</span>
+          <div class="progress" style="flex:1"><i style="width:${Math.round((wbc[c.id] / maxW) * 100)}%"></i></div>
+          <span class="bar-row__val">${wbc[c.id]}</span>
+        </div>`).join("")}
+    </div>` : ""}
+  `;
 }
 
 /* =====================================================================

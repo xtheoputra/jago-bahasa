@@ -11,10 +11,15 @@ import { getAuth } from "./auth/index.js";
 import * as store from "./core/state.js";
 import {
   initTheme, initLangSwitcher, applyStaticI18n, initAccountMenu, initInstall, initNetwork,
+  initAppearance, initReminder,
 } from "./chrome.js";
 import { registerSW } from "./pwa.js";
-import { renderHome, renderCourses, renderCourse, renderLesson, renderProgress, renderAbout } from "./views/learn.js";
-import { renderFlashcards, renderQuiz, renderReview, renderCloze } from "./views/practice.js";
+import { renderHome, renderCourses, renderCourse, renderLesson, renderProgress, renderStats, renderAbout } from "./views/learn.js";
+import {
+  renderFlashcards, renderQuiz, renderReview, renderCloze,
+  renderType, renderListen, renderMatch, renderDailyMix, renderMistakes,
+  renderSpeak, renderAudio, renderBuild, renderScript, renderFavorites,
+} from "./views/practice.js";
 import { renderDictionary } from "./views/dictionary.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
 import { notFound } from "./views/partials.js";
@@ -29,8 +34,19 @@ registerRoutes({
   flashcards: { render: renderFlashcards },
   quiz: { render: renderQuiz },
   cloze: { render: renderCloze },
+  type: { render: renderType },
+  listen: { render: renderListen },
+  match: { render: renderMatch },
+  speak: { render: renderSpeak },
+  audio: { render: renderAudio },
+  build: { render: renderBuild },
+  script: { render: renderScript },
+  mix: { render: renderDailyMix },
+  mistakes: { render: renderMistakes },
+  favorites: { render: renderFavorites },
   review: { render: renderReview },
   progress: { render: renderProgress },
+  stats: { render: renderStats },
   about: { render: renderAbout },
   login: { render: renderLogin },
   register: { render: renderRegister },
@@ -78,11 +94,13 @@ session.onChange((user) => {
 /* ------------------------------------------------------------------- boot */
 I18N.init();
 initTheme();
+initAppearance();
 initLangSwitcher();
 initAccountMenu();
 applyStaticI18n();
 initInstall();
 initNetwork();
+initReminder();
 warmVoices();
 registerSW();
 

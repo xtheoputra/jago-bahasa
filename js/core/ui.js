@@ -54,24 +54,35 @@ export function confetti() {
 }
 
 /* -------------------------------------------------------------------- TTS */
-export function speak(text, lang) {
+/** Speak `text` in `lang`. Optional `rate` (default .92) and `onend` callback
+ *  (also fired if speech is unavailable, so callers can keep a playlist moving). */
+export function speak(text, lang, rate, onend) {
   if (!("speechSynthesis" in window)) {
     toast("🔇 " + text);
+    if (onend) setTimeout(onend, 400);
     return;
   }
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang || "en-US";
-    u.rate = 0.92;
+    u.rate = rate || 0.92;
     const v = speechSynthesis
       .getVoices()
       .find((vo) => vo.lang && vo.lang.toLowerCase().startsWith((lang || "en").slice(0, 2)));
     if (v) u.voice = v;
+    if (onend) u.onend = onend;
     speechSynthesis.speak(u);
   } catch (e) {
     /* TTS is best-effort; never throw. */
+    if (onend) setTimeout(onend, 400);
   }
+}
+/** Stop any in-progress speech (used when leaving the hands-free audio mode). */
+export function stopSpeak() {
+  try {
+    window.speechSynthesis.cancel();
+  } catch (e) {}
 }
 
 /** Warm up the voice list (some browsers populate it lazily). */

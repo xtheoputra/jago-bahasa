@@ -14,7 +14,11 @@ let routeAbort = null;
 
 const NAV_MAP = {
   home: "home", courses: "courses", course: "courses", lesson: "courses",
-  flashcards: "courses", quiz: "courses", cloze: "courses", search: "search", review: "progress", progress: "progress", about: "about",
+  flashcards: "courses", quiz: "courses", cloze: "courses",
+  type: "courses", listen: "courses", match: "courses",
+  speak: "courses", audio: "courses", build: "courses", script: "courses",
+  mix: "home", mistakes: "progress", favorites: "progress", stats: "progress",
+  search: "search", review: "progress", progress: "progress", about: "about",
   login: null, register: null, account: null,
 };
 

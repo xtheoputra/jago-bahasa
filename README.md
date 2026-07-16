@@ -11,16 +11,34 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 |---|---|
 | 🌍 **20 bahasa dunia** | Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai |
 | 🃏 **Flashcard interaktif** | Kartu balik dengan animasi 3D + navigasi keyboard |
-| 🗣️ **Dialog percakapan** | Pelajaran "Percakapan" bergaya chat (A/B) dengan TTS & arti tiap baris di semua bahasa |
+| 🗣️ **Dialog percakapan** | Pelajaran "Percakapan" bergaya chat **multi-pembicara (A/B/C/D)** — grup & dialog panjang — dengan TTS & arti tiap baris di semua bahasa |
 | 🧠 **Kuis otomatis** | Pilihan ganda (acak kriptografis) dengan skor, cincin progres, dan XP |
+| ⌨️ **Latihan Ketik** | Recall aktif: lihat arti, ketik katanya (toleran aksen/huruf besar; aksara non-Latin pakai romanisasi) |
+| 👂 **Latihan Simak** | TTS membunyikan kata, pilih artinya (kata disembunyikan) — melatih pemahaman dengar |
+| 🔗 **Game Jodohkan** | Cocokkan kata↔arti melawan waktu |
+| ✍️ **Isian (Cloze)** | Isi bagian rumpang pada kalimat contoh |
+| 🎤 **Latihan Ucap** | Pengenalan suara menilai pelafalanmu (Chrome/Edge; fallback anggun) |
+| 🎧 **Dengar Tanpa Tangan** | Putar otomatis kata satu pelajaran, dengan kontrol kecepatan TTS |
+| 🧩 **Pembangun Kalimat** | Susun kata acak menjadi kalimat yang benar (tata bahasa) |
+| 🔡 **Pelatih Aksara** | Kuasai hiragana, hangul, kiril, abjad Arab, & konsonan Thai |
+| 🔁 **Review SRS** | Pengulangan berjarak (SM-2) atas kata yang sudah dipelajari |
+| 🎯 **Target Harian** | Target XP harian yang bisa diatur (Santai/Normal/Serius) + cincin progres |
+| 🎲 **Campur Cepat** | 10 soal acak lintas kata yang sudah dipelajari, satu ketuk |
+| 🧯 **Perbaiki Kesalahan** | Jawaban salah dikumpulkan otomatis jadi dek latihan terfokus |
+| ⭐ **Favorit** | Bintangi kata apa pun → dek review favorit lintas pelajaran |
+| 📊 **Statistik & Wawasan** | Heatmap aktivitas 26 minggu, tren XP, akurasi per mode, kata per bahasa |
+| 🧊 **Streak Freeze** | Pelindung streak otomatis saat bolos 1 hari (didapat tiap 7 hari beruntun) |
+| 🔔 **Pengingat Belajar** | Notifikasi lokal saat target harian belum tercapai |
+| 💾 **Ekspor / Impor** | Cadangkan & pulihkan progres ke berkas JSON (tanpa perlu akun) |
 | 🔊 **Pelafalan audio** | Text-to-speech native untuk setiap kata |
-| 🏅 **Gamifikasi** | XP, level, hari beruntun (streak), dan pencapaian |
+| 🏅 **Gamifikasi** | XP, level, hari beruntun (streak), dan **16 pencapaian bertingkat** |
+| 🎨 **Personalisasi** | 5 warna aksen, mode teks besar & ramah disleksia |
 | 🔐 **Akun & keamanan** | Daftar / masuk dengan kata sandi. Sandi **di-hash** (tidak pernah disimpan apa adanya) |
 | ☁️ **Sinkronisasi** | Progres tersimpan per-akun & bisa disinkronkan antar-perangkat (mode backend) |
 | 🌐 **Antarmuka 3 bahasa** | Indonesia · English · Español (bisa diganti kapan saja) |
 | 🌙 **Mode terang/gelap** | Mengikuti sistem, bisa di-toggle manual |
 | 📡 **Offline & installable** | Service worker + manifest + ikon PNG/SVG (termasuk maskable) |
-| ♿ **Aksesibilitas** | Skip-link, `:focus-visible`, `prefers-reduced-motion`, ARIA, live regions, dialog terjebak-fokus |
+| ♿ **Aksesibilitas** | Skip-link, `:focus-visible`, `prefers-reduced-motion`, ARIA, live regions, teks besar/disleksia |
 
 ---
 

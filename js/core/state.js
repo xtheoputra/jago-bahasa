@@ -20,6 +20,16 @@ export function defaultState() {
     activeDays: [], // recent ISO dates
     lastCourse: null,
     srs: {}, // "courseId/lessonId#index": { due, interval, ease, reps, lapses }
+    dailyGoal: 50, // XP target per day
+    daily: { date: null, xp: 0, credited: false }, // today's XP toward the goal
+    mistakes: {}, // "courseId/lessonId#index": { at: YYYY-MM-DD }
+    counters: {}, // named lifetime counters (typed, listened, matched, perfect, goalDays…)
+    favorites: {}, // "courseId/lessonId#index": true — starred words
+    freezes: 0, // streak-freeze tokens (protect the streak for one missed day)
+    bestStreak: 0, // longest streak ever reached
+    xpHistory: {}, // "YYYY-MM-DD": xp earned that day (for the trend chart)
+    tally: {}, // per-mode { tries, ok } for accuracy insights
+    reminder: { enabled: false, time: "19:00" }, // local study reminder
     updatedAt: 0,
   };
 }
@@ -105,17 +115,54 @@ function touchStreak() {
   if (state.lastActive === today) return;
   if (state.lastActive) {
     const gap = daysBetween(state.lastActive, today);
-    state.streak = gap === 1 ? state.streak + 1 : 1;
+    if (gap === 1) {
+      state.streak += 1;
+    } else if (gap === 2 && (state.freezes || 0) > 0) {
+      // exactly one missed day, protected by a streak-freeze token
+      state.freezes -= 1;
+      state.streak += 1;
+    } else {
+      state.streak = 1;
+    }
   } else {
     state.streak = 1;
   }
+  // earn a freeze token at each 7-day milestone (capped at 3)
+  if (state.streak > 0 && state.streak % 7 === 0) {
+    state.freezes = Math.min((state.freezes || 0) + 1, 3);
+  }
+  state.bestStreak = Math.max(state.bestStreak || 0, state.streak);
   state.lastActive = today;
-  state.activeDays = Array.from(new Set([...(state.activeDays || []), today])).slice(-60);
+  state.activeDays = Array.from(new Set([...(state.activeDays || []), today])).slice(-400);
 }
 
 /* ---------------------------------------------------------- gamification */
 export const levelFromXp = (xp) => Math.floor(xp / 200) + 1;
 export const xpIntoLevel = (xp) => xp % 200;
+
+export const DAILY_GOALS = [20, 50, 100];
+
+/** Add XP to today's daily bucket (resets at midnight) and, the first time the
+ *  goal is reached on a given day, credit a "goalDays" counter for achievements. */
+function bumpDaily(n) {
+  const today = todayISO();
+  if (!state.daily || state.daily.date !== today) state.daily = { date: today, xp: 0, credited: false };
+  state.daily.xp += n;
+  state.xpHistory = state.xpHistory || {};
+  state.xpHistory[today] = (state.xpHistory[today] || 0) + n;
+  const hd = Object.keys(state.xpHistory).sort();
+  if (hd.length > 140) for (const d of hd.slice(0, hd.length - 140)) delete state.xpHistory[d];
+  if (!state.daily.credited && state.daily.xp >= (state.dailyGoal || 50)) {
+    state.daily.credited = true;
+    state.counters = state.counters || {};
+    state.counters.goalDays = (state.counters.goalDays || 0) + 1;
+  }
+}
+/** Single funnel for every XP gain, so daily-goal tracking is never bypassed. */
+function award(n) {
+  state.xp += n;
+  bumpDaily(n);
+}
 
 /* ----------------------------------------------------------- aggregates */
 export const getState = () => state;
@@ -152,14 +199,14 @@ export function completeLesson(c, l, quizPct) {
     state.quizScores[key] = quizPct;
   }
   const gain = first ? 30 : 5;
-  state.xp += gain;
+  award(gain);
   touchStreak();
   persist();
   return { first, gain };
 }
 
 export function addXp(n) {
-  state.xp += n;
+  award(n);
   persist();
 }
 
@@ -214,9 +261,178 @@ export function srsGrade(key, grade) {
 /** Reward a finished practice session with XP + streak (capped to curb farming). */
 export function srsReviewed(n) {
   if (n <= 0) return;
-  state.xp += Math.min(n, 20) * 2;
+  award(Math.min(n, 20) * 2);
   touchStreak();
   persist();
+}
+
+/* ------------------------------------------------------------- daily goal */
+export function setDailyGoal(n) {
+  if (!DAILY_GOALS.includes(n)) return;
+  state.dailyGoal = n;
+  persist();
+}
+/** Today's progress toward the daily XP goal. */
+export function dailyStatus() {
+  const today = todayISO();
+  const xp = state.daily && state.daily.date === today ? state.daily.xp : 0;
+  const goal = state.dailyGoal || 50;
+  return { goal, xp, pct: Math.min(100, Math.round((xp / goal) * 100)), hit: xp >= goal };
+}
+
+/* --------------------------------------------------------- mistakes deck
+   Wrong answers from quiz/typing/listening are collected here and turned into a
+   focused review deck; a card is removed as soon as it is answered correctly. */
+export function recordMistake(key) {
+  if (!key) return;
+  state.mistakes = state.mistakes || {};
+  state.mistakes[key] = { at: todayISO() };
+  persist();
+}
+export function clearMistake(key) {
+  if (state.mistakes && state.mistakes[key]) {
+    delete state.mistakes[key];
+    persist();
+  }
+}
+export function mistakeCount() {
+  return Object.keys(state.mistakes || {}).length;
+}
+/** Resolve mistake keys into live {c,l,it} entries, pruning any that no longer exist. */
+export function mistakePool() {
+  const out = [];
+  let pruned = false;
+  for (const key of Object.keys(state.mistakes || {})) {
+    const [path, idx] = key.split("#");
+    const [cid, lid] = (path || "").split("/");
+    const c = COURSES.find((x) => x.id === cid);
+    const l = c && c.lessons.find((x) => x.id === lid);
+    const it = l && l.items[+idx];
+    if (c && l && it) out.push({ key, c, l, it });
+    else {
+      delete state.mistakes[key];
+      pruned = true;
+    }
+  }
+  if (pruned) persist();
+  return out;
+}
+
+/* ----------------------------------------------------------- counters */
+export function bumpCounter(name, n = 1) {
+  state.counters = state.counters || {};
+  state.counters[name] = (state.counters[name] || 0) + n;
+  persist();
+}
+export function counter(name) {
+  return (state.counters && state.counters[name]) || 0;
+}
+
+/* ------------------------------------------------------------- favorites */
+export function favToggle(key) {
+  state.favorites = state.favorites || {};
+  const now = !state.favorites[key];
+  if (now) state.favorites[key] = true;
+  else delete state.favorites[key];
+  persist();
+  return now;
+}
+export function isFav(key) {
+  return !!(state.favorites && state.favorites[key]);
+}
+export function favCount() {
+  return Object.keys(state.favorites || {}).length;
+}
+/** Resolve favorite keys into live {key,c,l,it} entries, pruning stale ones. */
+export function favPool() {
+  const out = [];
+  let pruned = false;
+  for (const key of Object.keys(state.favorites || {})) {
+    const [path, idx] = key.split("#");
+    const [cid, lid] = (path || "").split("/");
+    const c = COURSES.find((x) => x.id === cid);
+    const l = c && c.lessons.find((x) => x.id === lid);
+    const it = l && l.items[+idx];
+    if (c && l && it) out.push({ key, c, l, it });
+    else {
+      delete state.favorites[key];
+      pruned = true;
+    }
+  }
+  if (pruned) persist();
+  return out;
+}
+
+/* ------------------------------------------------- accuracy tally per mode */
+export function recordAttempt(mode, ok) {
+  state.tally = state.tally || {};
+  const t = (state.tally[mode] = state.tally[mode] || { tries: 0, ok: 0 });
+  t.tries += 1;
+  if (ok) t.ok += 1;
+  persist();
+}
+export function accuracy(mode) {
+  const t = state.tally && state.tally[mode];
+  if (!t || !t.tries) return null;
+  return { tries: t.tries, ok: t.ok, pct: Math.round((t.ok / t.tries) * 100) };
+}
+
+/* ------------------------------------------------------ streak / insights */
+export const getFreezes = () => state.freezes || 0;
+export const getBestStreak = () => Math.max(state.bestStreak || 0, state.streak || 0);
+/** XP earned per day for the last n days (oldest → newest). */
+export function xpTrend(n) {
+  return lastNDates(n).map((d) => ({ date: d, xp: (state.xpHistory && state.xpHistory[d]) || 0 }));
+}
+/** Words learned per course, for the insights breakdown. */
+export function wordsByCourse() {
+  const by = {};
+  for (const [key, count] of Object.entries(state.learnedWords || {})) {
+    const cid = key.split("/")[0];
+    by[cid] = (by[cid] || 0) + (count || 0);
+  }
+  return by;
+}
+
+/* ------------------------------------------------------------- reminder */
+export function setReminder(enabled, time) {
+  state.reminder = { enabled: !!enabled, time: time || (state.reminder && state.reminder.time) || "19:00" };
+  persist();
+}
+export function getReminder() {
+  return state.reminder || { enabled: false, time: "19:00" };
+}
+
+/* -------------------------------------------------------- export / import */
+export function exportData() {
+  return JSON.stringify(
+    { app: "jago-bahasa", schema: 1, exportedAt: new Date().toISOString(), progress: snapshot() },
+    null,
+    2
+  );
+}
+/** Merge an exported bundle (or a raw progress object) into the active bucket. */
+export function importData(text) {
+  let obj;
+  try {
+    obj = JSON.parse(text);
+  } catch (e) {
+    return { ok: false, error: "parse" };
+  }
+  const p = obj && (obj.progress || (typeof obj.xp === "number" ? obj : null));
+  if (!p || typeof p !== "object") return { ok: false, error: "shape" };
+  mergeInto(state, p);
+  // carry over goal + counters that mergeInto doesn't touch
+  if (typeof p.dailyGoal === "number" && DAILY_GOALS.includes(p.dailyGoal)) state.dailyGoal = p.dailyGoal;
+  if (p.counters && typeof p.counters === "object") {
+    state.counters = state.counters || {};
+    for (const k of Object.keys(p.counters)) state.counters[k] = Math.max(state.counters[k] || 0, p.counters[k] || 0);
+  }
+  if (p.mistakes && typeof p.mistakes === "object") {
+    state.mistakes = Object.assign(state.mistakes || {}, p.mistakes);
+  }
+  persist();
+  return { ok: true };
 }
 
 export function reset() {
@@ -252,6 +468,28 @@ function mergeInto(target, src) {
     target.lastActive = src.lastActive || target.lastActive;
   }
   target.lastCourse = target.lastCourse || src.lastCourse || null;
+  target.counters = target.counters || {};
+  for (const k of Object.keys(src.counters || {})) {
+    target.counters[k] = Math.max(target.counters[k] || 0, src.counters[k] || 0);
+  }
+  target.mistakes = Object.assign({}, src.mistakes || {}, target.mistakes || {});
+  target.favorites = Object.assign({}, src.favorites || {}, target.favorites || {});
+  target.freezes = Math.max(target.freezes || 0, src.freezes || 0);
+  target.bestStreak = Math.max(target.bestStreak || 0, src.bestStreak || 0);
+  target.xpHistory = target.xpHistory || {};
+  for (const d of Object.keys(src.xpHistory || {})) {
+    target.xpHistory[d] = Math.max(target.xpHistory[d] || 0, src.xpHistory[d] || 0);
+  }
+  target.tally = target.tally || {};
+  for (const m of Object.keys(src.tally || {})) {
+    const a = target.tally[m] || { tries: 0, ok: 0 },
+      b = src.tally[m] || { tries: 0, ok: 0 };
+    target.tally[m] = { tries: Math.max(a.tries, b.tries), ok: Math.max(a.ok, b.ok) };
+  }
+  if (src.reminder && !target.reminder) target.reminder = src.reminder;
+  if (typeof src.dailyGoal === "number" && DAILY_GOALS.includes(src.dailyGoal) && !target.dailyGoal) {
+    target.dailyGoal = src.dailyGoal;
+  }
   return target;
 }
 

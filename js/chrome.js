@@ -8,8 +8,104 @@ import { I18N } from "./i18n.js";
 import { session } from "./auth/session.js";
 import { navigate, rerender } from "./core/router.js";
 import { confirmDialog } from "./views/auth.js";
+import * as store from "./core/state.js";
 
 const t = (...a) => I18N.t(...a);
+const readLS = (k) => {
+  try {
+    return localStorage.getItem(k);
+  } catch (e) {
+    return null;
+  }
+};
+const writeLS = (k, v) => {
+  try {
+    localStorage.setItem(k, v);
+  } catch (e) {}
+};
+
+/* ---------------------------------------------- appearance (accent / text) */
+const ACCENTS = {
+  violet: { brand: "#6d5efc", b700: "#5a4be0", soft: "rgba(109,94,252,.14)" },
+  blue: { brand: "#3b82f6", b700: "#2563eb", soft: "rgba(59,130,246,.14)" },
+  green: { brand: "#10b981", b700: "#059669", soft: "rgba(16,185,129,.14)" },
+  orange: { brand: "#f97316", b700: "#ea580c", soft: "rgba(249,115,22,.14)" },
+  pink: { brand: "#ec4899", b700: "#db2777", soft: "rgba(236,72,153,.14)" },
+};
+export const ACCENT_KEYS = Object.keys(ACCENTS);
+export const getAccent = () => (ACCENTS[readLS("jb.accent")] ? readLS("jb.accent") : "violet");
+export const getTextScale = () => (readLS("jb.textScale") === "large" ? "large" : "normal");
+export const getDyslexia = () => readLS("jb.dyslexia") === "1";
+function applyAccent() {
+  const a = ACCENTS[getAccent()] || ACCENTS.violet;
+  const s = document.documentElement.style;
+  s.setProperty("--brand", a.brand);
+  s.setProperty("--brand-700", a.b700);
+  s.setProperty("--brand-soft", a.soft);
+}
+function applyTextPrefs() {
+  document.documentElement.classList.toggle("text-lg", getTextScale() === "large");
+  document.documentElement.classList.toggle("dyslexic", getDyslexia());
+}
+export function setAccent(name) {
+  if (!ACCENTS[name]) return;
+  writeLS("jb.accent", name);
+  applyAccent();
+}
+export function setTextScale(v) {
+  writeLS("jb.textScale", v === "large" ? "large" : "normal");
+  applyTextPrefs();
+}
+export function setDyslexia(b) {
+  writeLS("jb.dyslexia", b ? "1" : "0");
+  applyTextPrefs();
+}
+export function initAppearance() {
+  applyAccent();
+  applyTextPrefs();
+}
+
+/* ---------------------------------------------------- study reminder (local)
+   Best-effort: a local notification fired while the app is open. True
+   background push needs a server, which is out of scope for the static build. */
+let reminderTimer = null;
+function scheduleReminder() {
+  clearTimeout(reminderTimer);
+  const r = store.getReminder();
+  if (!r.enabled) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const [hh, mm] = (r.time || "19:00").split(":").map((x) => parseInt(x, 10));
+  const now = new Date();
+  const target = new Date();
+  target.setHours(hh || 19, mm || 0, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  reminderTimer = setTimeout(() => {
+    if (!store.dailyStatus().hit) {
+      try {
+        new Notification("Jago Bahasa", { body: t("reminder.body"), icon: "./icons/icon-192.png" });
+      } catch (e) {}
+    }
+    scheduleReminder();
+  }, Math.min(target - now, 2 ** 31 - 1));
+}
+export function initReminder() {
+  scheduleReminder();
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) scheduleReminder();
+  });
+}
+/** Toggle the reminder, requesting notification permission if enabling. */
+export async function requestReminder(enabled, time) {
+  if (enabled && "Notification" in window && Notification.permission !== "granted") {
+    try {
+      await Notification.requestPermission();
+    } catch (e) {}
+  }
+  const granted = !("Notification" in window) ? false : Notification.permission === "granted";
+  store.setReminder(!!enabled && granted, time);
+  scheduleReminder();
+  return { enabled: store.getReminder().enabled, granted };
+}
 
 /* ------------------------------------------------------------------ theme */
 export function initTheme() {

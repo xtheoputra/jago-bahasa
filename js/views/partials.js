@@ -64,7 +64,7 @@ export function lessonRowHTML(c, l, i, state) {
     </div>`;
 }
 
-export function vocabHTML(c, it) {
+export function vocabHTML(c, it, key, faved) {
   return `
     <div class="vocab">
       <div class="vocab__left" style="min-width:0">
@@ -75,21 +75,26 @@ export function vocabHTML(c, it) {
         <div class="vocab__meaning">${esc(mean(it.m))}</div>
         ${it.ex ? `<div class="vocab__ex">“${esc(it.ex.t)}” — ${esc(mean(it.ex.m))}</div>` : ""}
       </div>
+      ${key ? `<button class="favbtn ${faved ? "on" : ""}" data-fav="${esc(key)}" aria-label="${esc(t("fav.toggle"))}" aria-pressed="${faved ? "true" : "false"}">${faved ? "★" : "☆"}</button>` : ""}
       <button class="speakbtn" data-speak="${esc(it.term)}" aria-label="${esc(t("lesson.flashcards"))}">🔊</button>
     </div>`;
 }
 
-/** Chat-style dialogue. `l.dialog` is an array of speaker tags ("A"/"B")
- *  parallel to `l.items` — each item is one spoken line. TTS is wired by the
- *  caller via wireSpeak() (each bubble carries a [data-speak]). */
+/** Chat-style dialogue. `l.dialog` is an array of speaker tags ("A"/"B"/"C"/"D"…)
+ *  parallel to `l.items` — each item is one spoken line. Two or more speakers are
+ *  supported: odd speakers (A, C) sit on the left, even (B, D) on the right, and
+ *  each gets its own avatar colour. TTS is wired by the caller via wireSpeak()
+ *  (each bubble carries a [data-speak]). */
 export function dialogHTML(c, l) {
   return `<div class="dialog">${l.items
     .map((it, k) => {
-      const who = (l.dialog && l.dialog[k]) === "B" ? "B" : "A";
-      const side = who === "B" ? "b" : "a";
+      const who = (l.dialog && l.dialog[k]) || "A";
+      const idx = Math.max(0, who.toUpperCase().charCodeAt(0) - 65); // A→0, B→1, C→2, D→3…
+      const side = idx % 2 === 0 ? "a" : "b";                        // A,C on the left; B,D on the right
+      const color = ["a", "b", "c", "d"][idx % 4];                   // avatar colour per speaker
       return `
       <div class="dialog__turn dialog__turn--${side}">
-        <span class="dialog__who dialog__who--${side}" aria-hidden="true">${who}</span>
+        <span class="dialog__who dialog__who--${color}" aria-hidden="true">${esc(who)}</span>
         <div class="dialog__bubble">
           <div class="dialog__term ${c.cjk ? "cjk" : ""}" dir="${c.rtl ? "rtl" : "ltr"}">${esc(it.term)}</div>
           ${it.reading ? `<div class="vocab__reading">${esc(it.reading)}</div>` : ""}

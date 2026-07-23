@@ -46,7 +46,11 @@ before(async () => {
   });
   for (let i = 0; i < 100; i++) {
     try {
-      if ((await fetch(BASE + "/api/health")).ok) return;
+      if ((await fetch(BASE + "/api/health")).ok) {
+        // First launch also creates the Chrome profile; do it before timing anything.
+        render("#/home");
+        return;
+      }
     } catch (e) {
       /* not up yet */
     }
@@ -71,7 +75,7 @@ function render(hash) {
       `--user-data-dir=${profileDir}`,
       "--enable-logging=stderr",
       "--v=0",
-      "--virtual-time-budget=7000",
+      "--virtual-time-budget=12000",
       "--dump-dom",
       BASE + hash,
     ],
@@ -85,15 +89,19 @@ function render(hash) {
 }
 
 /** Assert a route renders, contains every marker, and logs nothing.
- *  The router mounts `<div class="view">`; when the test files run in parallel
- *  a loaded machine can occasionally dump the DOM before the modules have
- *  executed, so retry until the view is actually mounted. */
+ *  Two things can make a single dump arrive early: the modules may not have
+ *  executed yet (no `<div class="view">`), or the route's vocabulary chunk may
+ *  still be in flight, leaving the skeleton in place. Both are transient under
+ *  parallel test files, so retry until the markers appear — a route that is
+ *  genuinely broken still fails, it just takes three attempts to say so. */
 function expectRoute(hash, markers) {
+  const want = ['class="view"', ...markers];
   let dom = "",
     errors = [];
   for (let attempt = 0; attempt < 3; attempt++) {
     ({ dom, errors } = render(hash));
-    if (dom.includes('class="view"')) break;
+    if (errors.length) break; // a real error is not worth retrying
+    if (want.every((m) => dom.includes(m))) break;
   }
   assert.deepEqual(errors, [], `${hash} logged console errors`);
   assert.ok(dom.includes('class="view"'), `${hash} never mounted a view (${dom.length} bytes)`);

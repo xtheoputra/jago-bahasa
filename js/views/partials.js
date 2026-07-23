@@ -1,7 +1,7 @@
 /* =========================================================================
    views/partials.js — Reusable HTML builders + wiring shared across views.
    ========================================================================= */
-import { $$, esc, mean, initials } from "../core/dom.js";
+import { $$, esc, mean, initials, fold } from "../core/dom.js";
 import { speak } from "../core/ui.js";
 import { courseProgress } from "../core/state.js";
 import { navigate } from "../core/router.js";
@@ -13,8 +13,11 @@ export function courseCardHTML(c) {
   const p = courseProgress(c);
   const totalWords = c.lessons.reduce((n, l) => n + l.items.length, 0);
   const cta = p.done > 0 ? t("courses.continue") : t("courses.start");
+  // Pre-folded haystack so the catalogue filter can match on any spelling of
+  // the language name (UI language, English, Spanish, endonym, or code).
+  const hay = fold([c.id, c.native, c.name.id, c.name.en, c.name.es].join(" "));
   return `
-    <article class="card course-card" data-course="${esc(c.id)}" tabindex="0" role="button" aria-label="${esc(mean(c.name))}">
+    <article class="card course-card" data-course="${esc(c.id)}" data-search="${esc(hay)}" tabindex="0" role="button" aria-label="${esc(mean(c.name))}">
       <div class="course-card__top">
         <div class="flag">${esc(c.flag)}</div>
         <div>

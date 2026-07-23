@@ -313,3 +313,78 @@ Permintaan pengguna: *"perbanyak lagi percakapan dan isi"*.
 ---
 
 *Diperbarui — v2.8 2026-07-15 (dialog restoran + warna + tubuh di semua bahasa: +60 pelajaran, +440 kata, +20 dialog).*
+
+---
+
+## Pembaruan v2.12 — 3 Bahasa Baru, Mode Dikte & Perbaikan Bug Tanggal (2026-07-23)
+
+Permintaan pengguna: *"kerjakan tambah bahasa/pelajaran, fitur baru, perbaikan bug, dan jalankan dulu servernya untuk pengecekan, jika sukses maka lanjutkan"*.
+
+> Catatan: v2.9–v2.11 (multi-pembicara A/B/C/D, 10 mode latihan, statistik, personalisasi) sudah rilis
+> pada commit `7baffb0` tetapi belum sempat dicatat di dokumen ini; ringkasannya ada di `README.md`.
+
+### 1. Konten — 3 bahasa baru (`js/data.js`, `js/scripts.js`)
+Mengikuti template 16 pelajaran yang sama persis dengan bahasa lain (greet · num · ess · food · city ·
+family · convo · shop · travel · health · weather · convo2 · color · body · convo3 · convo4):
+
+| | Bahasa | Aksara | TTS | Isi |
+|---|---|---|---|---|
+| 🇬🇷 | **Yunani** (`el`) | Yunani (+ romanisasi tiap item) | `el-GR` | 16 pelajaran / 126 item / 31 contoh |
+| 🇺🇦 | **Ukraina** (`uk`) | Kiril Ukraina (+ romanisasi) | `uk-UA` | 16 pelajaran / 126 item / 25 contoh |
+| 🇰🇪 | **Swahili** (`sw`) | Latin | `sw-KE` | 16 pelajaran / 126 item / 31 contoh |
+
+- Tiap bahasa membawa **4 dialog** (perkenalan, kafe/pasar, obrolan grup A/B/C, dialog panjang 12 baris di hotel).
+- **Pelatih Aksara** baru: **alfabet Yunani** (24 huruf) & **Kiril Ukraina** (33 huruf, termasuk ґ/є/і/ї).
+- Katalog kini **23 kursus / 406 pelajaran / 3275 item** (dari 20/358/2897). Swahili menutup celah:
+  sebelumnya tidak ada satu pun bahasa Afrika di katalog.
+
+### 2. Fitur baru
+- 📝 **Mode Dikte** (`#/dictation/:kursus/:pelajaran`, `renderDictation`) — murni audio: kata dibunyikan TTS,
+  pelajar mengetik apa yang didengar. Ada tombol putar ulang & **mode pelan 0,6×**; aksara non-Latin cukup
+  ditulis romanisasinya (aturan sama dengan mode Ketik, jadi tanpa IME). Terhubung ke XP, SRS,
+  dek "Perbaiki Kesalahan", statistik akurasi, dan pencapaian baru **Telinga Tajam** (30 kata).
+- 🌟 **Kata Hari Ini** di Beranda — satu kata untuk seluruh katalog per hari kalender, dipilih dengan
+  hash FNV-1a atas tanggal (stabil lintas muat-ulang & perangkat, tanpa menyimpan apa pun), lengkap
+  dengan TTS, tombol ⭐ favorit, dan tautan ke pelajarannya.
+- 🔎 **Filter katalog bahasa** — dengan 23 bahasa, halaman Katalog kini punya kotak cari yang mencocokkan
+  nama dalam bahasa UI, Inggris, Spanyol, endonim, atau kode ISO; diakritik diabaikan (`Francais` → Français).
+  Kartu disembunyikan di tempat sehingga wiring klik/keyboard-nya tetap hidup.
+- Pencapaian tambahan: **Warga Dunia** (coba 10 bahasa) → total **18 pencapaian**.
+
+### 3. Perbaikan bug
+1. **Tanggal ISO diurai sebagai UTC** (`js/core/state.js`, `js/views/learn.js`) — `new Date("YYYY-MM-DD")`
+   menghasilkan tengah malam UTC, lalu komponennya dibaca secara lokal. Di seluruh zona waktu di sebelah
+   barat UTC (Amerika, dll.) ini menggeser satu hari: **jadwal SRS jatuh tempo sehari lebih awal**, huruf
+   hari pada kisi streak salah, dan kolom heatmap bergeser. Ditambahkan `parseISO()` yang membangun tanggal
+   dari komponennya (selalu lokal) dan dipakai di `addDaysISO`, `daysBetween`, `dayLetter`, dan `firstDow`.
+2. **`mergeInto` memangkas `activeDays` ke 60 hari** — masuk akun, impor cadangan, atau tarik data cloud
+   diam-diam menghapus sebagian besar riwayat heatmap 182 hari. Kini memakai batas yang sama dengan
+   `touchStreak` (400 hari) lewat konstanta bersama.
+3. **`xpHistory` dipangkas di 140 hari** padahal heatmap butuh 182 → konstanta `HISTORY_DAYS = 200`,
+   sehingga kolom terlama heatmap tidak lagi selalu kosong.
+4. **Mode Jodohkan** menampilkan pesan yang salah ("Tidak ada kesalahan — kerja bagus! 🎉") ketika
+   pelajaran terlalu sedikit katanya → kunci baru `match.tooFew`.
+5. **Mode Isian (cloze) tidak mencatat apa pun** — tidak masuk statistik akurasi dan jawaban salahnya
+   tidak pernah menjadi dek "Perbaiki Kesalahan". Kini memanggil `recordAttempt`/`recordMistake`/
+   `clearMistake` seperti mode lain, dan **cloze + dikte ditambahkan ke daftar akurasi** di halaman Statistik.
+6. **`speak()` tanpa penangan `onerror`** — bila suara untuk sebuah bahasa tidak tersedia, callback `onend`
+   tidak pernah terpanggil sehingga **playlist "Dengar Tanpa Tangan" berhenti selamanya**. Kini `onend`
+   dan `onerror` memakai satu callback sekali-jalan.
+
+### Validasi
+- Server `node server.js` dijalankan lebih dulu: `/api/health` → 200, seluruh aset kunci → 200.
+- `node --check` untuk **semua** berkas JS (front-end + server + sw) — bersih.
+- Validator konten: **23 kursus, 406 pelajaran, 3275 item**, panjang `dialog` == panjang `items`,
+  arti id/en/es lengkap, tidak ada id kursus/pelajaran ganda — 0 error.
+- Uji logika `state.js` di Node (localStorage di-stub): **20 assert lulus** — termasuk jatuh tempo SRS =
+  besok (bukan hari ini), `lastNDates` bersambung, pemangkasan `xpHistory`, dan `activeDays` tidak terpotong saat impor.
+- Uji konten & filter: **26 assert lulus** — romanisasi lengkap untuk el/uk, cloze & pembangun kalimat
+  terbukti bisa dimainkan (≥23 soal per bahasa baru), tiap pelajaran mampu mengisi 4 opsi kuis,
+  filter katalog cocok untuk "yunani"/"greek"/"Ελλην"/"swahili"/"ukrain"/"francais".
+- Render nyata headless Chrome pada 8 rute (beranda, katalog, kursus el, pelajaran, dikte, kuis, kamus,
+  statistik) — **0 error konsol**; Kata Hari Ini, 23 kartu bahasa, tombol Dikte, dan pelatih aksara Yunani muncul.
+- Paritas i18n: **328 kunci** identik di id/en/es. SW `jb-v2.11.0` → **`jb-v2.12.0`**.
+
+---
+
+*Diperbarui — v2.12 2026-07-23 (3 bahasa baru: +48 pelajaran, +378 kata, +12 dialog, +2 pelatih aksara; mode Dikte, Kata Hari Ini, filter katalog; 6 perbaikan bug).*

@@ -17,6 +17,11 @@ export const esc = (s) =>
 /** Pick the meaning/label for the current UI language, with fallbacks. */
 export const mean = (m) => (m && (m[I18N.current] || m.id || m.en)) || "";
 
+/** Case-fold and strip Latin diacritics, so "Francais" matches "Français".
+ *  Non-Latin scripts (Greek, Cyrillic, Han…) pass through lowercased. */
+export const fold = (s) =>
+  String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
 /** Move focus to the main landmark (called after route changes for a11y).
  *  No-ops if a view already placed focus inside #main (e.g. an auth form field). */
 export function focusMain() {

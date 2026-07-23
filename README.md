@@ -9,29 +9,32 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 
 | | |
 |---|---|
-| 🌍 **20 bahasa dunia** | Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai |
+| 🌍 **23 bahasa dunia** | Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai, **Yunani**, **Ukraina**, **Swahili** |
 | 🃏 **Flashcard interaktif** | Kartu balik dengan animasi 3D + navigasi keyboard |
 | 🗣️ **Dialog percakapan** | Pelajaran "Percakapan" bergaya chat **multi-pembicara (A/B/C/D)** — grup & dialog panjang — dengan TTS & arti tiap baris di semua bahasa |
 | 🧠 **Kuis otomatis** | Pilihan ganda (acak kriptografis) dengan skor, cincin progres, dan XP |
 | ⌨️ **Latihan Ketik** | Recall aktif: lihat arti, ketik katanya (toleran aksen/huruf besar; aksara non-Latin pakai romanisasi) |
+| 📝 **Latihan Dikte** | Hanya audio — dengar lalu tulis kata yang kamu dengar, dengan tombol putar ulang & mode pelan (🐢 0,6×) |
 | 👂 **Latihan Simak** | TTS membunyikan kata, pilih artinya (kata disembunyikan) — melatih pemahaman dengar |
 | 🔗 **Game Jodohkan** | Cocokkan kata↔arti melawan waktu |
 | ✍️ **Isian (Cloze)** | Isi bagian rumpang pada kalimat contoh |
 | 🎤 **Latihan Ucap** | Pengenalan suara menilai pelafalanmu (Chrome/Edge; fallback anggun) |
 | 🎧 **Dengar Tanpa Tangan** | Putar otomatis kata satu pelajaran, dengan kontrol kecepatan TTS |
 | 🧩 **Pembangun Kalimat** | Susun kata acak menjadi kalimat yang benar (tata bahasa) |
-| 🔡 **Pelatih Aksara** | Kuasai hiragana, hangul, kiril, abjad Arab, & konsonan Thai |
+| 🔡 **Pelatih Aksara** | Kuasai hiragana, hangul, kiril (Rusia & Ukraina), abjad Arab, alfabet Yunani, & konsonan Thai |
+| 🌟 **Kata Hari Ini** | Satu kata pilihan per hari dari seluruh katalog — bisa didengarkan, dibintangi, & dibuka pelajarannya |
+| 🔎 **Filter Katalog** | Cari bahasa di halaman Katalog (cocok dengan nama lokal, Inggris, Spanyol, endonim, atau kode) |
 | 🔁 **Review SRS** | Pengulangan berjarak (SM-2) atas kata yang sudah dipelajari |
 | 🎯 **Target Harian** | Target XP harian yang bisa diatur (Santai/Normal/Serius) + cincin progres |
 | 🎲 **Campur Cepat** | 10 soal acak lintas kata yang sudah dipelajari, satu ketuk |
 | 🧯 **Perbaiki Kesalahan** | Jawaban salah dikumpulkan otomatis jadi dek latihan terfokus |
 | ⭐ **Favorit** | Bintangi kata apa pun → dek review favorit lintas pelajaran |
-| 📊 **Statistik & Wawasan** | Heatmap aktivitas 26 minggu, tren XP, akurasi per mode, kata per bahasa |
+| 📊 **Statistik & Wawasan** | Heatmap aktivitas 26 minggu, tren XP, akurasi per mode (10 mode), kata per bahasa |
 | 🧊 **Streak Freeze** | Pelindung streak otomatis saat bolos 1 hari (didapat tiap 7 hari beruntun) |
 | 🔔 **Pengingat Belajar** | Notifikasi lokal saat target harian belum tercapai |
 | 💾 **Ekspor / Impor** | Cadangkan & pulihkan progres ke berkas JSON (tanpa perlu akun) |
 | 🔊 **Pelafalan audio** | Text-to-speech native untuk setiap kata |
-| 🏅 **Gamifikasi** | XP, level, hari beruntun (streak), dan **16 pencapaian bertingkat** |
+| 🏅 **Gamifikasi** | XP, level, hari beruntun (streak), dan **18 pencapaian bertingkat** |
 | 🎨 **Personalisasi** | 5 warna aksen, mode teks besar & ramah disleksia |
 | 🔐 **Akun & keamanan** | Daftar / masuk dengan kata sandi. Sandi **di-hash** (tidak pernah disimpan apa adanya) |
 | ☁️ **Sinkronisasi** | Progres tersimpan per-akun & bisa disinkronkan antar-perangkat (mode backend) |

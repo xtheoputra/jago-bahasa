@@ -1,7 +1,7 @@
 /* =========================================================================
    views/learn.js — Content views: home, courses, course, lesson, progress, about.
    ========================================================================= */
-import { $, $$, esc, mean } from "../core/dom.js";
+import { $, $$, esc, mean, fold } from "../core/dom.js";
 import { toast, confetti } from "../core/ui.js";
 import * as store from "../core/state.js";
 import { COURSES, findCourse, findLesson } from "../data.js";
@@ -37,9 +37,73 @@ function dailyRingHTML(daily) {
    HOME
    ===================================================================== */
 function dayLetter(iso) {
-  const wd = new Date(iso).getDay();
+  const wd = store.parseISO(iso).getDay(); // local calendar day — see state.parseISO
   const set = I18N.current === "id" ? ["Mg", "Sn", "Sl", "Rb", "Km", "Jm", "Sb"] : ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
   return set[wd];
+}
+
+/* ------------------------------------------------------------ word of the day
+   One word for the whole catalogue per calendar day, chosen by hashing the
+   date — so it is stable across reloads and devices without storing anything,
+   and it rotates at local midnight like every other daily counter. */
+let WOD_INDEX = null;
+function wodIndex() {
+  if (WOD_INDEX) return WOD_INDEX;
+  WOD_INDEX = [];
+  for (const c of COURSES) {
+    for (const l of c.lessons) {
+      if (l.dialog) continue; // dialogue lines are sentences, not vocabulary
+      l.items.forEach((it, i) => WOD_INDEX.push({ c, l, it, key: `${c.id}/${l.id}#${i}` }));
+    }
+  }
+  return WOD_INDEX;
+}
+function wordOfDay() {
+  const pool = wodIndex();
+  if (!pool.length) return null;
+  const iso = store.todayISO();
+  let h = 2166136261; // FNV-1a
+  for (let i = 0; i < iso.length; i++) {
+    h ^= iso.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return pool[Math.abs(h) % pool.length];
+}
+function wordOfDayHTML(w) {
+  if (!w) return "";
+  const faved = store.isFav(w.key);
+  return `
+    <section class="card wod" style="margin-top:20px">
+      <div class="wod__head">
+        <span class="eyebrow">🌟 ${esc(t("wod.title"))}</span>
+        <a class="chip" href="#/lesson/${esc(w.c.id)}/${esc(w.l.id)}">${esc(w.c.flag)} ${esc(mean(w.c.name))}</a>
+      </div>
+      <div class="wod__body">
+        <div class="wod__main" style="min-width:0">
+          <div class="wod__term ${w.c.cjk ? "cjk" : ""}" dir="${w.c.rtl ? "rtl" : "ltr"}">${esc(w.it.term)}</div>
+          ${w.it.reading ? `<div class="vocab__reading">${esc(w.it.reading)}</div>` : ""}
+          <div class="wod__mean">${esc(mean(w.it.m))}</div>
+          ${w.it.ex ? `<div class="vocab__ex">“${esc(w.it.ex.t)}” — ${esc(mean(w.it.ex.m))}</div>` : ""}
+        </div>
+        <div class="wod__actions">
+          <button class="speakbtn" data-speak="${esc(w.it.term)}" aria-label="🔊">🔊</button>
+          <button class="favbtn ${faved ? "on" : ""}" data-fav="${esc(w.key)}" aria-label="${esc(t("fav.toggle"))}" aria-pressed="${faved ? "true" : "false"}">${faved ? "★" : "☆"}</button>
+        </div>
+      </div>
+    </section>`;
+}
+
+/** Star/unstar buttons rendered by any view (delegated per button). */
+function wireFavButtons(root) {
+  $$("[data-fav]", root).forEach((b) => {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      const on = store.favToggle(b.dataset.fav);
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.textContent = on ? "★" : "☆";
+    };
+  });
 }
 
 function guestBannerHTML() {
@@ -72,6 +136,7 @@ export function renderHome(view) {
   const srsDue = srsPool.length ? store.srsDue(srsPool).length : 0;
   const daily = store.dailyStatus();
   const mistakes = store.mistakeCount();
+  const wod = wordOfDay();
 
   const week = store.lastNDates(7);
   const streakCells = week
@@ -124,6 +189,8 @@ export function renderHome(view) {
       </div>
     </div>
 
+    ${wordOfDayHTML(wod)}
+
     ${srsPool.length ? `
     <a class="card review-cta" href="#/review" style="margin-top:20px">
       <div class="review-cta__ico" aria-hidden="true">🔁</div>
@@ -157,6 +224,10 @@ export function renderHome(view) {
       if (b) b.remove();
     };
   }
+  if (wod) {
+    wireSpeak($(".wod", view) || view, wod.c);
+    wireFavButtons(view);
+  }
   wireCourseCards(view);
 }
 
@@ -165,10 +236,34 @@ export function renderHome(view) {
    ===================================================================== */
 export function renderCourses(view) {
   view.innerHTML = `
-    <div class="section-head"><div><h2>${esc(t("courses.title"))}</h2><p>${esc(t("courses.sub"))}</p></div></div>
-    <div class="grid cols-auto">${COURSES.map(courseCardHTML).join("")}</div>
+    <div class="section-head"><div><h2>${esc(t("courses.title"))}</h2><p>${esc(t("courses.sub"))}</p></div>
+      <span class="chip" id="courseCount">${COURSES.length} ${esc(t("courses.languages"))}</span>
+    </div>
+    <div class="course-filter card">
+      <input type="search" id="courseQ" class="dict-search" placeholder="${esc(t("courses.filter"))}"
+        autocomplete="off" spellcheck="false" aria-label="${esc(t("courses.filter"))}" />
+    </div>
+    <div class="grid cols-auto" id="courseGrid">${COURSES.map(courseCardHTML).join("")}</div>
+    <p class="dict-count" id="courseNone" hidden>${esc(t("search.none"))}</p>
   `;
   wireCourseCards(view);
+
+  // Live filter — hides cards in place, so their click/keyboard wiring survives.
+  const q = $("#courseQ", view),
+    cards = $$(".course-card", view),
+    countEl = $("#courseCount", view),
+    noneEl = $("#courseNone", view);
+  q.addEventListener("input", () => {
+    const nq = fold(q.value).trim();
+    let shown = 0;
+    cards.forEach((el) => {
+      const ok = !nq || (el.dataset.search || "").includes(nq);
+      el.hidden = !ok;
+      if (ok) shown++;
+    });
+    countEl.textContent = `${shown} ${t("courses.languages")}`;
+    noneEl.hidden = shown > 0;
+  });
 }
 
 /* =====================================================================
@@ -248,6 +343,7 @@ export function renderLesson(view, [cid, lid]) {
       <button class="btn" id="goMatch">🔗 ${esc(t("lesson.match"))}</button>
       <button class="btn" id="goAudio">🎧 ${esc(t("lesson.audio"))}</button>
       ${!l.dialog ? `<button class="btn" id="goType">⌨️ ${esc(t("lesson.type"))}</button>` : ""}
+      ${!l.dialog ? `<button class="btn" id="goDictation">📝 ${esc(t("lesson.dictation"))}</button>` : ""}
       ${!l.dialog ? `<button class="btn" id="goSpeak">🎤 ${esc(t("lesson.speak"))}</button>` : ""}
       ${!l.dialog && !c.cjk && c.id !== "th" && l.items.some((it) => it.ex) ? `<button class="btn" id="goBuild">🧩 ${esc(t("lesson.build"))}</button>` : ""}
       ${l.items.some((it) => it.ex) ? `<button class="btn" id="goCloze">✍️ ${esc(t("lesson.cloze"))}</button>` : ""}
@@ -256,15 +352,7 @@ export function renderLesson(view, [cid, lid]) {
   `;
 
   wireSpeak(view, c);
-  $$("[data-fav]", view).forEach((b) => {
-    b.onclick = (e) => {
-      e.stopPropagation();
-      const on = store.favToggle(b.dataset.fav);
-      b.classList.toggle("on", on);
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-      b.textContent = on ? "★" : "☆";
-    };
-  });
+  wireFavButtons(view);
   $("#goFlash").onclick = () => navigate(`#/flashcards/${c.id}/${l.id}`);
   $("#goQuiz").onclick = () => navigate(`#/quiz/${c.id}/${l.id}`);
   $("#goListen").onclick = () => navigate(`#/listen/${c.id}/${l.id}`);
@@ -272,6 +360,8 @@ export function renderLesson(view, [cid, lid]) {
   $("#goAudio").onclick = () => navigate(`#/audio/${c.id}/${l.id}`);
   const typeBtn = $("#goType");
   if (typeBtn) typeBtn.onclick = () => navigate(`#/type/${c.id}/${l.id}`);
+  const dictationBtn = $("#goDictation");
+  if (dictationBtn) dictationBtn.onclick = () => navigate(`#/dictation/${c.id}/${l.id}`);
   const speakBtn = $("#goSpeak");
   if (speakBtn) speakBtn.onclick = () => navigate(`#/speak/${c.id}/${l.id}`);
   const buildBtn = $("#goBuild");
@@ -306,6 +396,8 @@ const ACHIEVEMENTS = [
   { id: "typist", emoji: "⌨️", name: { id: "Juru Ketik", en: "Typist", es: "Mecanógrafo" }, desc: { id: "Ketik 50 kata dengan benar", en: "Type 50 words correctly", es: "Escribe 50 palabras" }, test: () => store.counter("typed") >= 50 },
   { id: "matcher", emoji: "🔗", name: { id: "Ahli Jodoh", en: "Matchmaker", es: "Emparejador" }, desc: { id: "Menangkan 5 game Jodohkan", en: "Win 5 Match games", es: "Gana 5 juegos de emparejar" }, test: () => store.counter("matched") >= 5 },
   { id: "goalDays", emoji: "🎯", name: { id: "Disiplin", en: "Disciplined", es: "Disciplinado" }, desc: { id: "Capai target harian 5 hari", en: "Hit your daily goal 5 days", es: "Cumple tu meta diaria 5 días" }, test: () => store.counter("goalDays") >= 5 },
+  { id: "dictated", emoji: "📝", name: { id: "Telinga Tajam", en: "Sharp Ear", es: "Oído fino" }, desc: { id: "Tulis 30 kata dari dikte", en: "Write 30 words from dictation", es: "Escribe 30 palabras al dictado" }, test: () => store.counter("dictated") >= 30 },
+  { id: "poly10", emoji: "🧭", name: { id: "Warga Dunia", en: "World Citizen", es: "Ciudadano del mundo" }, desc: { id: "Coba 10 bahasa berbeda", en: "Try 10 languages", es: "Prueba 10 idiomas" }, test: () => store.languagesTouched() >= 10 },
 ];
 
 export function renderProgress(view) {
@@ -505,7 +597,7 @@ export function renderStats(view) {
   const DAYS = 182;
   const dates = store.lastNDates(DAYS);
   const bucket = (xp) => (xp <= 0 ? 0 : xp < 20 ? 1 : xp < 50 ? 2 : xp < 100 ? 3 : 4);
-  const firstDow = new Date(dates[0]).getDay();
+  const firstDow = store.parseISO(dates[0]).getDay();
   const cells = [];
   for (let b = 0; b < firstDow; b++) cells.push(`<span class="hm-cell hm-blank"></span>`);
   for (const d of dates) {
@@ -521,6 +613,7 @@ export function renderStats(view) {
   // Accuracy per practice mode.
   const MODES = [
     ["quiz", "🧠", "lesson.quiz"], ["type", "⌨️", "lesson.type"], ["listen", "👂", "lesson.listen"],
+    ["dictation", "📝", "lesson.dictation"], ["cloze", "✍️", "lesson.cloze"],
     ["speak", "🎤", "lesson.speak"], ["build", "🧩", "lesson.build"], ["mix", "🎲", "mix.title"],
     ["mistakes", "🧯", "mistakes.title"], ["fav", "⭐", "fav.title"],
   ];
@@ -590,7 +683,7 @@ export function renderAbout(view) {
     { e: "🔊", t: { id: "Pelafalan Audio", en: "Audio Pronunciation", es: "Pronunciación de audio" }, d: { id: "Dengarkan setiap kata dengan text-to-speech native.", en: "Hear every word with native text-to-speech.", es: "Escucha cada palabra con voz nativa." } },
     { e: "🃏", t: { id: "Flashcard & Kuis", en: "Flashcards & Quizzes", es: "Tarjetas y cuestionarios" }, d: { id: "Belajar aktif dengan kartu balik dan kuis interaktif.", en: "Active recall with flip cards and interactive quizzes.", es: "Recuerdo activo con tarjetas y cuestionarios." } },
     { e: "🏅", t: { id: "Gamifikasi", en: "Gamification", es: "Gamificación" }, d: { id: "XP, level, hari beruntun, dan pencapaian membuat belajar seru.", en: "XP, levels, streaks and achievements keep you motivated.", es: "XP, niveles, rachas y logros te motivan." } },
-    { e: "🌍", t: { id: "20 Bahasa Dunia", en: "20 World Languages", es: "20 idiomas del mundo" }, d: { id: "Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai.", en: "English, Spanish, French, German, Japanese, Korean, Mandarin, Arabic, Italian, Portuguese, Russian, Hindi, Malay, Dutch, Swedish, Turkish, Tagalog, Vietnamese, Polish, Thai.", es: "Inglés, español, francés, alemán, japonés, coreano, mandarín, árabe, italiano, portugués, ruso, hindi, malayo, neerlandés, sueco, turco, tagalo, vietnamita, polaco, tailandés." } },
+    { e: "🌍", t: { id: `${COURSES.length} Bahasa Dunia`, en: `${COURSES.length} World Languages`, es: `${COURSES.length} idiomas del mundo` }, d: { id: "Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai, Yunani, Ukraina, Swahili.", en: "English, Spanish, French, German, Japanese, Korean, Mandarin, Arabic, Italian, Portuguese, Russian, Hindi, Malay, Dutch, Swedish, Turkish, Tagalog, Vietnamese, Polish, Thai, Greek, Ukrainian, Swahili.", es: "Inglés, español, francés, alemán, japonés, coreano, mandarín, árabe, italiano, portugués, ruso, hindi, malayo, neerlandés, sueco, turco, tagalo, vietnamita, polaco, tailandés, griego, ucraniano, suajili." } },
     { e: "🔐", t: { id: "Akun Aman (Opsional)", en: "Secure Accounts (Optional)", es: "Cuentas seguras (opcional)" }, d: { id: "Kata sandi di-hash (PBKDF2), tidak pernah disimpan apa adanya. Buat akun untuk menyimpan & menyinkronkan progres, atau tetap sebagai tamu.", en: "Passwords are hashed (PBKDF2), never stored as text. Create an account to save & sync progress, or stay a guest.", es: "Las contraseñas se procesan con hash (PBKDF2), nunca se guardan como texto. Crea una cuenta para guardar y sincronizar, o sigue como invitado." } },
   ];
   view.innerHTML = `

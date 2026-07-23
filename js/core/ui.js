@@ -71,7 +71,18 @@ export function speak(text, lang, rate, onend) {
       .getVoices()
       .find((vo) => vo.lang && vo.lang.toLowerCase().startsWith((lang || "en").slice(0, 2)));
     if (v) u.voice = v;
-    if (onend) u.onend = onend;
+    if (onend) {
+      // Fire the callback exactly once, on success OR failure — a missing voice
+      // for the language would otherwise stall a hands-free playlist forever.
+      let fired = false;
+      const once = () => {
+        if (fired) return;
+        fired = true;
+        onend();
+      };
+      u.onend = once;
+      u.onerror = once;
+    }
     speechSynthesis.speak(u);
   } catch (e) {
     /* TTS is best-effort; never throw. */

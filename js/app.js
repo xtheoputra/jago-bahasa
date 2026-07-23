@@ -19,6 +19,7 @@ import {
   renderFlashcards, renderQuiz, renderReview, renderCloze,
   renderType, renderListen, renderMatch, renderDailyMix, renderMistakes,
   renderSpeak, renderAudio, renderBuild, renderScript, renderFavorites,
+  renderDictation,
 } from "./views/practice.js";
 import { renderDictionary } from "./views/dictionary.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
@@ -36,6 +37,7 @@ registerRoutes({
   cloze: { render: renderCloze },
   type: { render: renderType },
   listen: { render: renderListen },
+  dictation: { render: renderDictation },
   match: { render: renderMatch },
   speak: { render: renderSpeak },
   audio: { render: renderAudio },

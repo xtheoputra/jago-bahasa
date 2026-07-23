@@ -9,6 +9,11 @@ import { COURSES } from "../data.js";
 const KEY_BASE = "jb.progress.v1";
 const nsKey = (uid) => `${KEY_BASE}::${uid || "guest"}`;
 
+/** How many days of daily history to retain (must exceed the 182-day heatmap). */
+export const HISTORY_DAYS = 200;
+/** Cap on the retained active-day list (shared by touchStreak and mergeInto). */
+const ACTIVE_DAYS_CAP = 400;
+
 export function defaultState() {
   return {
     xp: 0,
@@ -86,13 +91,24 @@ function persist() {
   notify();
 }
 
-/* --------------------------------------------------------------- dates */
+/* --------------------------------------------------------------- dates
+   All progress dates are *calendar* dates in the learner's own timezone.
+   `new Date("YYYY-MM-DD")` parses as UTC midnight, so reading local components
+   off it lands on the previous day everywhere west of UTC — which shifted SRS
+   due dates, streak weekday labels and the heatmap by one. parseISO() builds
+   the date from its parts instead, which is always local. */
+export function parseISO(iso) {
+  const [y, m, d] = String(iso || "").split("-").map(Number);
+  return new Date(y || 1970, (m || 1) - 1, d || 1);
+}
+const fmtISO = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 export function todayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return fmtISO(new Date());
 }
 function daysBetween(a, b) {
-  return Math.round((new Date(b) - new Date(a)) / 86400000);
+  return Math.round((parseISO(b) - parseISO(a)) / 86400000);
 }
 export function lastNDates(n) {
   const out = [];
@@ -100,14 +116,14 @@ export function lastNDates(n) {
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(base);
     d.setDate(base.getDate() - i);
-    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    out.push(fmtISO(d));
   }
   return out;
 }
 function addDaysISO(iso, n) {
-  const d = new Date(iso);
+  const d = parseISO(iso);
   d.setDate(d.getDate() + n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return fmtISO(d);
 }
 
 function touchStreak() {
@@ -133,7 +149,7 @@ function touchStreak() {
   }
   state.bestStreak = Math.max(state.bestStreak || 0, state.streak);
   state.lastActive = today;
-  state.activeDays = Array.from(new Set([...(state.activeDays || []), today])).slice(-400);
+  state.activeDays = Array.from(new Set([...(state.activeDays || []), today])).slice(-ACTIVE_DAYS_CAP);
 }
 
 /* ---------------------------------------------------------- gamification */
@@ -150,8 +166,10 @@ function bumpDaily(n) {
   state.daily.xp += n;
   state.xpHistory = state.xpHistory || {};
   state.xpHistory[today] = (state.xpHistory[today] || 0) + n;
+  // Keep more days than the 26-week (182-day) heatmap needs, otherwise its
+  // oldest columns can never light up.
   const hd = Object.keys(state.xpHistory).sort();
-  if (hd.length > 140) for (const d of hd.slice(0, hd.length - 140)) delete state.xpHistory[d];
+  if (hd.length > HISTORY_DAYS) for (const d of hd.slice(0, hd.length - HISTORY_DAYS)) delete state.xpHistory[d];
   if (!state.daily.credited && state.daily.xp >= (state.dailyGoal || 50)) {
     state.daily.credited = true;
     state.counters = state.counters || {};
@@ -461,9 +479,11 @@ function mergeInto(target, src) {
     const a = target.srs[k], b = src.srs[k];
     if (!a || (b && (b.reps || 0) > (a.reps || 0))) target.srs[k] = b;
   }
+  // Keep the same window as touchStreak — trimming to 60 here used to silently
+  // erase most of the heatmap on sign-in, import, or a cloud pull.
   target.activeDays = Array.from(new Set([...(target.activeDays || []), ...(src.activeDays || [])]))
     .sort()
-    .slice(-60);
+    .slice(-ACTIVE_DAYS_CAP);
   if (!target.lastActive || (src.lastActive && src.lastActive > target.lastActive)) {
     target.lastActive = src.lastActive || target.lastActive;
   }

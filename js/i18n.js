@@ -161,6 +161,13 @@ export const I18N = {
       "settings.title": "Pengaturan", "settings.accent": "Warna Aksen", "settings.textSize": "Ukuran Teks", "settings.normal": "Normal", "settings.large": "Besar", "settings.dyslexia": "Mode Ramah Disleksia",
       "settings.reminder": "Pengingat Belajar", "settings.reminderNote": "Notifikasi saat target harian belum tercapai (ketika aplikasi terbuka).", "settings.reminderDenied": "Izin notifikasi ditolak.", "settings.reminderOn": "Pengingat diaktifkan.",
       "reminder.body": "Yuk lanjut belajar — targetmu hari ini belum tercapai! 🔥",
+      /* ---- Dictation · word of the day · catalogue filter ---- */
+      "lesson.dictation": "Dikte", "dictation.title": "Latihan Dikte",
+      "dictation.prompt": "Dengarkan, lalu tulis kata yang kamu dengar:", "dictation.placeholder": "Tulis yang kamu dengar…",
+      "dictation.replay": "Putar ulang", "dictation.slow": "Pelan",
+      "wod.title": "Kata Hari Ini",
+      "courses.filter": "Cari bahasa…", "courses.languages": "bahasa",
+      "match.tooFew": "Kata di pelajaran ini terlalu sedikit untuk game Jodohkan.",
     },
     en: {
       "nav.home": "Home", "nav.courses": "Languages", "nav.progress": "Progress", "nav.about": "About",
@@ -297,6 +304,13 @@ export const I18N = {
       "settings.title": "Settings", "settings.accent": "Accent Color", "settings.textSize": "Text Size", "settings.normal": "Normal", "settings.large": "Large", "settings.dyslexia": "Dyslexia-friendly Mode",
       "settings.reminder": "Study Reminder", "settings.reminderNote": "A notification when your daily goal isn't met yet (while the app is open).", "settings.reminderDenied": "Notification permission denied.", "settings.reminderOn": "Reminder enabled.",
       "reminder.body": "Time to study — you haven't hit today's goal yet! 🔥",
+      /* ---- Dictation · word of the day · catalogue filter ---- */
+      "lesson.dictation": "Dictation", "dictation.title": "Dictation practice",
+      "dictation.prompt": "Listen, then type the word you hear:", "dictation.placeholder": "Type what you hear…",
+      "dictation.replay": "Play again", "dictation.slow": "Slower",
+      "wod.title": "Word of the Day",
+      "courses.filter": "Search languages…", "courses.languages": "languages",
+      "match.tooFew": "This lesson has too few words for the Match game.",
     },
     es: {
       "nav.home": "Inicio", "nav.courses": "Idiomas", "nav.progress": "Progreso", "nav.about": "Acerca",
@@ -433,6 +447,13 @@ export const I18N = {
       "settings.title": "Ajustes", "settings.accent": "Color de acento", "settings.textSize": "Tamaño del texto", "settings.normal": "Normal", "settings.large": "Grande", "settings.dyslexia": "Modo apto para dislexia",
       "settings.reminder": "Recordatorio de estudio", "settings.reminderNote": "Una notificación cuando aún no cumples tu meta diaria (con la app abierta).", "settings.reminderDenied": "Permiso de notificación denegado.", "settings.reminderOn": "Recordatorio activado.",
       "reminder.body": "Hora de estudiar: ¡aún no alcanzas tu meta de hoy! 🔥",
+      /* ---- Dictado · palabra del día · filtro del catálogo ---- */
+      "lesson.dictation": "Dictado", "dictation.title": "Práctica de dictado",
+      "dictation.prompt": "Escucha y escribe la palabra que oyes:", "dictation.placeholder": "Escribe lo que oyes…",
+      "dictation.replay": "Repetir", "dictation.slow": "Más lento",
+      "wod.title": "Palabra del día",
+      "courses.filter": "Buscar idiomas…", "courses.languages": "idiomas",
+      "match.tooFew": "Esta lección tiene muy pocas palabras para el juego de emparejar.",
     },
   },
 

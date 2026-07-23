@@ -361,14 +361,14 @@ export function renderCloze(view, [cid, lid], ctx) {
   if (!c || !l) return notFound(view);
 
   const built = [];
-  for (const it of l.items) {
-    if (!it.ex) continue;
+  l.items.forEach((it, i) => {
+    if (!it.ex) return;
     const blanked = blankOut(it.term, it.ex.t);
-    if (!blanked) continue;
+    if (!blanked) return;
     const others = shuffle(l.items.filter((x) => x !== it));
-    if (others.length < 3) continue;
-    built.push({ it, blanked, opts: shuffle([it, ...others.slice(0, 3)]) });
-  }
+    if (others.length < 3) return;
+    built.push({ it, blanked, key: `${c.id}/${l.id}#${i}`, opts: shuffle([it, ...others.slice(0, 3)]) });
+  });
   if (!built.length) {
     view.innerHTML = `
       <nav class="crumb"><a href="#/lesson/${c.id}/${l.id}">‹ ${esc(mean(l.title))}</a></nav>
@@ -416,9 +416,14 @@ export function renderCloze(view, [cid, lid], ctx) {
           if (o === q.it) b.classList.add("correct");
           else if (b === btn) b.classList.add("wrong");
         });
+        // Feed the same accuracy stats + mistakes deck as every other mode.
+        store.recordAttempt("cloze", correct);
         if (correct) {
           score++;
+          store.clearMistake(q.key);
           speak(q.it.term, c.speech);
+        } else {
+          store.recordMistake(q.key);
         }
         advTimer = setTimeout(() => {
           if (signal && signal.aborted) return;
@@ -737,6 +742,102 @@ export function renderListen(view, [cid, lid], ctx) {
 }
 
 /* =====================================================================
+   DICTATION — hear the word (TTS only) and type what you heard.
+   The hardest recall drill in the app: no text prompt at all, so it trains
+   listening and spelling together. Non-Latin scripts expect the romanization
+   (same rule as the typing mode), so no IME is ever required.
+   ===================================================================== */
+export function renderDictation(view, [cid, lid], ctx) {
+  const c = findCourse(cid);
+  const l = findLesson(c, lid);
+  if (!c || !l) return notFound(view);
+  const back = `#/lesson/${c.id}/${l.id}`;
+  const deck = shuffle(l.items.map((it, i) => ({ it, key: `${c.id}/${l.id}#${i}` })));
+  const signal = ctx && ctx.signal;
+  const SLOW = 0.6;
+  let qi = 0,
+    score = 0;
+  if (signal) signal.addEventListener("abort", stopSpeak, { once: true });
+
+  function paint() {
+    if (qi >= deck.length) {
+      store.srsReviewed(score);
+      store.bumpCounter("dictated", score);
+      return sessionResult(view, score, deck.length, back, mean(l.title), () => renderDictation(view, [cid, lid], ctx));
+    }
+    const { it, key } = deck[qi];
+    const exp = expected(it);
+    let answered = false;
+    view.innerHTML = `
+      <nav class="crumb"><a href="${back}">‹ ${esc(mean(l.title))}</a></nav>
+      <div class="quiz-wrap">
+        <div class="quiz-top">
+          <div class="progress"><i style="width:${(qi / deck.length) * 100}%"></i></div>
+          <span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${deck.length}</span>
+        </div>
+        <div class="card quiz-q">
+          <div class="ask">${esc(t("dictation.prompt"))}</div>
+          <div class="dictation-play">
+            <button class="speakbtn dictation-big" id="dicPlay" aria-label="${esc(t("dictation.replay"))}">🔊</button>
+            <button class="btn btn--sm" id="dicSlow">🐢 ${esc(t("dictation.slow"))}</button>
+          </div>
+        </div>
+        <form class="type-form" id="dicForm" autocomplete="off">
+          <input class="type-input ${c.cjk ? "cjk" : ""}" id="dicInput" dir="${c.rtl ? "rtl" : "ltr"}"
+            placeholder="${esc(t("dictation.placeholder"))}" aria-label="${esc(t("dictation.prompt"))}"
+            autocapitalize="none" autocorrect="off" spellcheck="false" />
+          <div class="type-feedback" id="dicFb" hidden></div>
+          <div class="practice-bar" style="justify-content:center;margin-top:14px">
+            <button type="button" class="btn btn--ghost" id="dicSkip">${esc(t("mode.skip"))}</button>
+            <button type="submit" class="btn btn--accent" id="dicCheck">${esc(t("mode.check"))}</button>
+          </div>
+        </form>
+      </div>`;
+    const input = $("#dicInput", view);
+    const play = (rate) => speak(it.term, c.speech, rate);
+    $("#dicPlay", view).onclick = () => play();
+    $("#dicSlow", view).onclick = () => play(SLOW);
+    play();
+    input.focus();
+
+    function reveal(ok) {
+      answered = true;
+      store.recordAttempt("dictation", ok);
+      if (ok) {
+        score++;
+        store.clearMistake(key);
+      } else {
+        store.recordMistake(key);
+      }
+      const fb = $("#dicFb", view);
+      fb.hidden = false;
+      fb.className = "type-feedback " + (ok ? "ok" : "no");
+      fb.innerHTML =
+        `${ok ? "✅ " + esc(t("mode.correct")) : "❌ " + esc(t("mode.wrong"))} · ` +
+        `<span class="${c.cjk ? "cjk" : ""}" dir="${c.rtl ? "rtl" : "ltr"}"><strong>${esc(it.term)}</strong></span>` +
+        `${it.reading ? ` <em>(${esc(it.reading)})</em>` : ""} — ${esc(mean(it.m))}`;
+      input.disabled = true;
+      const skip = $("#dicSkip", view);
+      if (skip) skip.hidden = true;
+      $("#dicCheck", view).textContent = qi >= deck.length - 1 ? t("flash.done") : t("mode.continue");
+    }
+    $("#dicForm", view).onsubmit = (e) => {
+      e.preventDefault();
+      if (answered) {
+        qi++;
+        return paint();
+      }
+      const v = input.value;
+      reveal(norm(v) !== "" && norm(v) === norm(exp));
+    };
+    $("#dicSkip", view).onclick = () => {
+      if (!answered) reveal(false);
+    };
+  }
+  paint();
+}
+
+/* =====================================================================
    MATCH — tap a word then its meaning; clear all pairs against the clock.
    ===================================================================== */
 export function renderMatch(view, [cid, lid], ctx) {
@@ -746,7 +847,7 @@ export function renderMatch(view, [cid, lid], ctx) {
   const back = `#/lesson/${c.id}/${l.id}`;
   const picks = shuffle(l.items.slice()).slice(0, Math.min(6, l.items.length));
   if (picks.length < 3) {
-    view.innerHTML = emptyState("🔗", t("mistakes.empty"), back, t("cloze.back"));
+    view.innerHTML = emptyState("🔗", t("match.tooFew"), back, t("cloze.back"));
     return;
   }
   const left = shuffle(picks.map((it, i) => ({ it, id: i })));

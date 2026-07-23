@@ -70,6 +70,31 @@ export const SCRIPTS = [
       { ch: "ห", rom: "h (hip)" }, { ch: "อ", rom: "o (ang)" },
     ],
   },
+  {
+    id: "greek", lang: "el", speech: "el-GR", flag: "🇬🇷",
+    name: { id: "Alfabet Yunani", en: "Greek Alphabet", es: "Alfabeto griego" },
+    chars: [
+      { ch: "Α α", rom: "alfa (a)" }, { ch: "Β β", rom: "vita (v)" }, { ch: "Γ γ", rom: "gama (gh/y)" }, { ch: "Δ δ", rom: "delta (dh)" },
+      { ch: "Ε ε", rom: "epsilon (e)" }, { ch: "Ζ ζ", rom: "zita (z)" }, { ch: "Η η", rom: "ita (i)" }, { ch: "Θ θ", rom: "thita (th)" },
+      { ch: "Ι ι", rom: "iota (i)" }, { ch: "Κ κ", rom: "kapa (k)" }, { ch: "Λ λ", rom: "lamda (l)" }, { ch: "Μ μ", rom: "mi (m)" },
+      { ch: "Ν ν", rom: "ni (n)" }, { ch: "Ξ ξ", rom: "ksi (ks)" }, { ch: "Ο ο", rom: "omikron (o)" }, { ch: "Π π", rom: "pi (p)" },
+      { ch: "Ρ ρ", rom: "ro (r)" }, { ch: "Σ σ/ς", rom: "sigma (s)" }, { ch: "Τ τ", rom: "taf (t)" }, { ch: "Υ υ", rom: "ipsilon (i)" },
+      { ch: "Φ φ", rom: "fi (f)" }, { ch: "Χ χ", rom: "hi (kh)" }, { ch: "Ψ ψ", rom: "psi (ps)" }, { ch: "Ω ω", rom: "omega (o)" },
+    ],
+  },
+  {
+    id: "cyrillic-uk", lang: "uk", speech: "uk-UA", flag: "🇺🇦",
+    name: { id: "Kiril (Ukraina)", en: "Cyrillic (Ukrainian)", es: "Cirílico (ucraniano)" },
+    chars: [
+      { ch: "А", rom: "a" }, { ch: "Б", rom: "b" }, { ch: "В", rom: "v" }, { ch: "Г", rom: "h" }, { ch: "Ґ", rom: "g" },
+      { ch: "Д", rom: "d" }, { ch: "Е", rom: "e" }, { ch: "Є", rom: "ye" }, { ch: "Ж", rom: "zh" }, { ch: "З", rom: "z" },
+      { ch: "И", rom: "y" }, { ch: "І", rom: "i" }, { ch: "Ї", rom: "yi" }, { ch: "Й", rom: "y (short)" }, { ch: "К", rom: "k" },
+      { ch: "Л", rom: "l" }, { ch: "М", rom: "m" }, { ch: "Н", rom: "n" }, { ch: "О", rom: "o" }, { ch: "П", rom: "p" },
+      { ch: "Р", rom: "r" }, { ch: "С", rom: "s" }, { ch: "Т", rom: "t" }, { ch: "У", rom: "u" }, { ch: "Ф", rom: "f" },
+      { ch: "Х", rom: "kh" }, { ch: "Ц", rom: "ts" }, { ch: "Ч", rom: "ch" }, { ch: "Ш", rom: "sh" }, { ch: "Щ", rom: "shch" },
+      { ch: "Ь", rom: "(soft sign)" }, { ch: "Ю", rom: "yu" }, { ch: "Я", rom: "ya" },
+    ],
+  },
 ];
 
 export const findScript = (id) => SCRIPTS.find((s) => s.id === id);

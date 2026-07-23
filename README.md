@@ -88,6 +88,26 @@ Server ini melayani file statis **dan** API auth/sinkronisasi di `/api/*`, jadi 
 | `TRUST_PROXY` | `0` | Set `1` di belakang reverse proxy (honor `X-Forwarded-*`) |
 | `ALLOW_ORIGIN` | — | Set bila API beda origin dari frontend (mengaktifkan CORS + `SameSite=None`) |
 
+### 🧪 Menjalankan Tes
+
+```bash
+npm test          # 68 tes, ±4 detik, tanpa satu pun dependency
+```
+
+Memakai test runner bawaan Node (`node --test`, butuh Node ≥ 18) — **tidak ada paket yang perlu dipasang**.
+
+| Berkas | Yang dijaga |
+|---|---|
+| `tests/content.test.mjs` | Bentuk katalog: metadata lengkap 3 bahasa, ≥4 arti unik per pelajaran (kuis butuh 4 opsi), romanisasi wajib untuk aksara non-Latin, panjang `dialog` = jumlah baris, mode Isian & Pembangun Kalimat benar-benar bisa dimainkan di tiap bahasa |
+| `tests/state.test.mjs` | Progres & gamifikasi: penjadwalan SRS (termasuk regresi zona waktu `parseISO`), target harian, retensi riwayat, ekspor/impor, isolasi progres antar-akun |
+| `tests/i18n.test.mjs` | Paritas kunci id/en/es, tidak ada terjemahan kosong, jumlah `%s` sama, semua kunci yang dipakai kode benar-benar ada |
+| `tests/assets.test.mjs` | Cangkang offline: tiap modul JS ada di daftar precache `sw.js` (dan sebaliknya), manifest & ikon valid, CSP index.html utuh |
+| `tests/server.test.mjs` | Backend sungguhan di port acak + `DATA_DIR` sementara: MIME, header keamanan, blokir `server/`/dotfile/path-traversal, alur daftar→masuk→sinkron→keluar, CSRF, batas laju, sandi tak pernah tersimpan polos |
+| `tests/smoke.test.mjs` | Render nyata di headless Chrome untuk 10+ rute — **console harus bersih**. Dilewati otomatis bila Chrome tidak ada (`CHROME_PATH` untuk menunjuk biner tertentu) |
+
+> `js/package.json` hanya berisi `{"type":"module"}` supaya Node bisa meng-`import` modul ES di `js/`
+> langsung saat pengujian (peramban mengabaikannya). Root tetap `commonjs` untuk server.
+
 ### Memasang sebagai aplikasi
 - **Desktop (Chrome/Edge):** klik ikon install di address bar, atau tombol **⬇️ Pasang Aplikasi**.
 - **Android:** menu browser → *Add to Home Screen*.

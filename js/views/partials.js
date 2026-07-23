@@ -30,7 +30,7 @@ export function courseCardHTML(c) {
           <span class="chip chip--brand">${c.lessons.length} ${esc(t("courses.lessons"))}</span>
           <span class="chip">${totalWords} ${esc(t("words"))}</span>
         </div>
-        <div class="progress"><i style="width:${p.pct}%"></i></div>
+        <div class="progress" aria-hidden="true"><i style="width:${p.pct}%"></i></div>
         <div class="course-card__foot">
           <small>${p.done}/${p.total} • ${p.pct}%</small>
           <span class="btn btn--sm">${esc(cta)} →</span>
@@ -125,7 +125,7 @@ export function progRowHTML(c) {
       <div class="flag" style="width:42px;height:42px;font-size:1.4rem">${esc(c.flag)}</div>
       <div class="lesson-row__main">
         <h3>${esc(mean(c.name))}</h3>
-        <div class="progress" style="margin-top:8px"><i style="width:${p.pct}%"></i></div>
+        <div class="progress" style="margin-top:8px" aria-hidden="true"><i style="width:${p.pct}%"></i></div>
       </div>
       <div style="font-weight:800;color:var(--brand)">${p.pct}%</div>
     </a>`;

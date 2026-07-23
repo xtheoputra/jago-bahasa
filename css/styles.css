@@ -12,7 +12,14 @@
   --accent-soft: rgba(255, 159, 67, .16);
   --success: #2dd4a7;
   --danger: #ff5e7a;
+  --danger-600: #e02a4c; /* darker fill so white button text clears 4.5:1 */
   --warning: #ffce4a;
+  /* The three above are FILL colours. When the same hue is used as text or as a
+     standalone icon it needs 4.5:1 against the surface, which the light theme
+     overrides below provide. Dark mode is bright-on-dark and already passes. */
+  --success-text: var(--success);
+  --danger-text: var(--danger);
+  --accent-text: var(--accent);
 
   /* Radii & shadows */
   --r-sm: 10px;
@@ -45,6 +52,9 @@
   --surface-3: #262a52;
   --line: rgba(255, 255, 255, .08);
   --line-strong: rgba(255, 255, 255, .16);
+  /* Interactive controls (inputs, quiz options, word chips) must have a 3:1
+     boundary to satisfy WCAG 1.4.11; the decorative --line dividers need not. */
+  --line-input: rgba(255, 255, 255, .36);
   --text: #eef0ff;
   --text-dim: #aab0d8;
   --text-faint: #7e85b3;
@@ -62,9 +72,17 @@
   --surface-3: #eef0fb;
   --line: rgba(20, 24, 60, .09);
   --line-strong: rgba(20, 24, 60, .16);
+  --line-input: rgba(20, 24, 60, .50);
   --text: #161a33;
   --text-dim: #515877;
-  --text-faint: #878da8;
+  /* #878da8 only reached 2.89:1 on --surface-3; this clears 3:1 everywhere. */
+  --text-faint: #6f7590;
+  /* Mint, coral and amber are lovely as fills but unreadable as text on a light
+     page (1.74:1, 2.94:1 and 2.04:1). These darker twins clear 4.5:1 while
+     keeping the hue; the fills themselves are untouched. */
+  --success-text: #0a785d;
+  --danger-text: #d1123a;
+  --accent-text: #a75500;
 }
 
 * { box-sizing: border-box; }
@@ -214,8 +232,8 @@ button { font-family: inherit; }
   padding: 5px 11px; border-radius: var(--r-pill); font-size: .8rem; font-weight: 700; color: var(--text-dim);
 }
 .chip--brand { background: var(--brand-soft); color: var(--brand); border-color: transparent; }
-.chip--accent { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
-.chip--success { background: rgba(45,212,167,.14); color: var(--success); border-color: transparent; }
+.chip--accent { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; }
+.chip--success { background: rgba(45,212,167,.14); color: var(--success-text); border-color: transparent; }
 
 .progress { height: 9px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
 .progress > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand), var(--accent)); transition: width .6s var(--ease); }
@@ -301,7 +319,7 @@ button { font-family: inherit; }
   width: 42px; height: 42px; flex: 0 0 auto; border-radius: 12px; display: grid; place-items: center;
   font-weight: 800; background: var(--brand-soft); color: var(--brand); font-size: 1.05rem;
 }
-.lesson-row.done .lesson-row__num { background: rgba(45,212,167,.16); color: var(--success); }
+.lesson-row.done .lesson-row__num { background: rgba(45,212,167,.16); color: var(--success-text); }
 .lesson-row__main { flex: 1; min-width: 0; }
 .lesson-row__main h3 { margin: 0 0 2px; font-size: 1.02rem; }
 .lesson-row__main p { margin: 0; color: var(--text-dim); font-size: .86rem; }
@@ -363,15 +381,15 @@ button { font-family: inherit; }
 .type-form { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 16px; }
 .type-input {
   width: 100%; max-width: 460px; padding: 15px 18px; font-size: 1.25rem; font-weight: 700; text-align: center;
-  border-radius: var(--r-md); border: 2px solid var(--line); background: var(--surface); color: var(--text);
+  border-radius: var(--r-md); border: 2px solid var(--line-input); background: var(--surface); color: var(--text);
   transition: border-color var(--t-fast);
 }
 .type-input:focus { outline: none; border-color: var(--brand); }
 .type-input:disabled { opacity: .8; }
 .type-input.cjk { font-family: var(--font-cjk); }
 .type-feedback { font-weight: 700; font-size: 1rem; text-align: center; min-height: 1.4em; }
-.type-feedback.ok { color: var(--success); }
-.type-feedback.no { color: var(--danger); }
+.type-feedback.ok { color: var(--success-text); }
+.type-feedback.no { color: var(--danger-text); }
 .type-feedback em { color: var(--text-dim); font-style: normal; }
 
 /* ---- Match game ---- */
@@ -387,7 +405,7 @@ button { font-family: inherit; }
 .match-cell.cjk { font-family: var(--font-cjk); }
 .match-cell.sel { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
 .match-cell.done { visibility: hidden; }
-.match-cell.bad { border-color: var(--danger); background: rgba(255,94,122,.12); color: var(--danger); animation: mShake .4s; }
+.match-cell.bad { border-color: var(--danger); background: rgba(255,94,122,.12); color: var(--danger-text); animation: mShake .4s; }
 @keyframes mShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 
 /* ---- Favorite star ---- */
@@ -396,8 +414,8 @@ button { font-family: inherit; }
   background: transparent; border: 1px solid var(--line); color: var(--text-faint); font-size: 1.15rem; line-height: 1;
   transition: transform var(--t-fast), color var(--t-fast), background var(--t-fast);
 }
-.favbtn:hover { transform: scale(1.08); color: var(--accent); }
-.favbtn.on { color: var(--accent); border-color: transparent; background: var(--accent-soft); }
+.favbtn:hover { transform: scale(1.08); color: var(--accent-text); }
+.favbtn.on { color: var(--accent-text); border-color: transparent; background: var(--accent-soft); }
 
 /* ---- Speaking (pronunciation) ---- */
 .speak-zone { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 18px; }
@@ -422,12 +440,12 @@ button { font-family: inherit; }
 .build-mean { font-size: 1.25rem; font-weight: 700; margin-top: 4px; }
 .build-answer {
   min-height: 58px; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; margin: 14px 0;
-  border: 2px dashed var(--line); border-radius: var(--r-md); align-content: flex-start;
+  border: 2px dashed var(--line-input); border-radius: var(--r-md); align-content: flex-start;
 }
 .build-bank { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .build-placeholder { color: var(--text-faint); font-weight: 600; align-self: center; }
 .chip-word {
-  padding: 10px 14px; border-radius: var(--r-sm); border: 1px solid var(--line);
+  padding: 10px 14px; border-radius: var(--r-sm); border: 1px solid var(--line-input);
   background: var(--surface); color: var(--text); font-weight: 700; font-size: 1rem; cursor: pointer;
   transition: transform var(--t-fast), border-color var(--t-fast);
 }
@@ -475,7 +493,7 @@ button { font-family: inherit; }
 .switch__track::before { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform var(--t-fast); }
 .switch input:checked + .switch__track { background: var(--brand); }
 .switch input:checked + .switch__track::before { transform: translateX(20px); }
-.time-input { padding: 8px 10px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 700; }
+.time-input { padding: 8px 10px; border-radius: var(--r-sm); border: 1px solid var(--line-input); background: var(--surface); color: var(--text); font-weight: 700; }
 
 /* ---- Accessibility toggles ---- */
 :root.text-lg { font-size: 112.5%; }
@@ -484,14 +502,14 @@ button { font-family: inherit; }
 /* ---- Dictionary / global search ---- */
 .dict-controls { padding: 14px; margin-bottom: 14px; display: grid; gap: 12px; }
 .dict-search {
-  width: 100%; padding: 13px 16px; border-radius: var(--r-md); border: 1.5px solid var(--line-strong);
+  width: 100%; padding: 13px 16px; border-radius: var(--r-md); border: 1.5px solid var(--line-input);
   background: var(--surface-2); color: var(--text); font-size: 1.02rem; font-family: inherit;
   transition: border-color var(--t-fast), background var(--t-fast);
 }
 .dict-search:focus { outline: none; border-color: var(--brand); background: var(--surface); }
 .dict-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .dict-select {
-  padding: 9px 12px; border-radius: var(--r-md); border: 1.5px solid var(--line-strong);
+  padding: 9px 12px; border-radius: var(--r-md); border: 1.5px solid var(--line-input);
   background: var(--surface-2); color: var(--text); font-size: .9rem; font-family: inherit; font-weight: 600; cursor: pointer;
 }
 .dict-select:focus { outline: none; border-color: var(--brand); }
@@ -581,19 +599,19 @@ button { font-family: inherit; }
 .quiz-options { display: grid; gap: 12px; }
 .quiz-opt {
   text-align: left; padding: 16px 18px; border-radius: var(--r-md); cursor: pointer;
-  background: var(--surface); border: 1.5px solid var(--line-strong); color: var(--text);
+  background: var(--surface); border: 1.5px solid var(--line-input); color: var(--text);
   font-size: 1rem; font-weight: 600; transition: transform var(--t-fast), border-color var(--t-fast), background var(--t-fast);
 }
 .quiz-opt:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--brand); }
-.quiz-opt.correct { border-color: var(--success); background: rgba(45,212,167,.14); color: var(--success); }
-.quiz-opt.wrong { border-color: var(--danger); background: rgba(255,94,122,.12); color: var(--danger); }
+.quiz-opt.correct { border-color: var(--success); background: rgba(45,212,167,.14); color: var(--success-text); }
+.quiz-opt.wrong { border-color: var(--danger); background: rgba(255,94,122,.12); color: var(--danger-text); }
 .quiz-opt:disabled { cursor: default; }
 
 .quiz-result { text-align: center; padding: 34px 22px; }
 .quiz-result .ring { width: 140px; height: 140px; margin: 0 auto 18px; }
 .quiz-result h2 { font-size: 1.6rem; }
 .quiz-result .scoreline { color: var(--text-dim); font-weight: 700; margin-bottom: 8px; }
-.xp-pop { color: var(--accent); font-weight: 800; font-size: 1.2rem; }
+.xp-pop { color: var(--accent-text); font-weight: 800; font-size: 1.2rem; }
 
 /* Achievements */
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
@@ -747,14 +765,14 @@ button { font-family: inherit; }
 .field { margin-bottom: 14px; }
 .field > label { display: block; font-weight: 700; font-size: .86rem; margin-bottom: 6px; }
 .field input {
-  width: 100%; padding: 12px 14px; border-radius: var(--r-md); border: 1.5px solid var(--line-strong);
+  width: 100%; padding: 12px 14px; border-radius: var(--r-md); border: 1.5px solid var(--line-input);
   background: var(--surface-2); color: var(--text); font-size: 1rem; font-family: inherit;
   transition: border-color var(--t-fast), background var(--t-fast);
 }
 .field input:focus { outline: none; border-color: var(--brand); background: var(--surface); }
 .field input[aria-invalid="true"] { border-color: var(--danger); }
 .field input:disabled { opacity: .6; cursor: not-allowed; }
-.field-err { color: var(--danger); font-size: .8rem; font-weight: 600; margin: 6px 0 0; min-height: 1px; }
+.field-err { color: var(--danger-text); font-size: .8rem; font-weight: 600; margin: 6px 0 0; min-height: 1px; }
 
 .pw-wrap { position: relative; }
 .pw-wrap input { padding-right: 46px; }
@@ -780,7 +798,7 @@ button { font-family: inherit; }
 .auth-hint { font-size: .8rem; color: var(--text-faint); margin: 0 0 12px; }
 .auth-alt { text-align: center; margin-top: 16px; font-size: .9rem; color: var(--text-dim); }
 .auth-alt a { color: var(--brand); font-weight: 700; }
-.auth-error { color: var(--danger); font-weight: 600; font-size: .88rem; margin: 0 0 10px; min-height: 1px; }
+.auth-error { color: var(--danger-text); font-weight: 600; font-size: .88rem; margin: 0 0 10px; min-height: 1px; }
 .auth-sep { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--text-faint); font-size: .82rem; }
 .auth-sep::before, .auth-sep::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .btn--block { width: 100%; }
@@ -799,7 +817,7 @@ button { font-family: inherit; }
 .account-danger-desc { font-size: .85rem; color: var(--text-dim); margin: 0 0 14px; }
 .account-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .sync-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.btn--danger { background: linear-gradient(135deg, #ff738d, var(--danger)); box-shadow: 0 8px 22px -8px var(--danger); color: #fff; }
+.btn--danger { background: linear-gradient(135deg, #e8365a, var(--danger-600)); box-shadow: 0 8px 22px -8px var(--danger); color: #fff; }
 
 /* =========================================================================
    Modal dialog

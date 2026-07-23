@@ -163,8 +163,10 @@ export function renderLogin(view, params, ctx) {
     withSubmit($("#loginSubmit", form), "login.submitting", async () => {
       try {
         const user = await session.provider.login({ email, password, remember });
-        store.mergeGuestIntoActive();
-        toast(t("auth.welcomeBack", user.displayName));
+        // Tell the learner their guest progress survived — that is the more
+        // useful message than a generic welcome when there was any to carry.
+        const { merged } = store.mergeGuestIntoActive();
+        toast(merged ? t("auth.guestMerged") : t("auth.welcomeBack", user.displayName));
         navigate(next || "#/home");
       } catch (err) {
         formError(form, err.key || "auth.errGeneric");
@@ -230,8 +232,8 @@ export function renderRegister(view, params, ctx) {
     withSubmit($("#regSubmit", form), "register.submitting", async () => {
       try {
         const user = await session.provider.register({ displayName: name, email, password, remember: true });
-        store.mergeGuestIntoActive();
-        toast(t("auth.accountCreated"));
+        const { merged } = store.mergeGuestIntoActive();
+        toast(merged ? t("auth.guestMerged") : t("auth.accountCreated"));
         navigate(next || "#/home");
       } catch (err) {
         formError(form, err.key || "auth.errGeneric");

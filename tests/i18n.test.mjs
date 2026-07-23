@@ -85,6 +85,23 @@ test("every key the code asks for is defined", () => {
   assert.deepEqual(missing, [], `undefined i18n keys: ${missing.join(", ")}`);
 });
 
+test("no key is left defined but unused", () => {
+  // Keys are also referenced as bare identifiers (authError("auth.errRate"),
+  // fieldError(form, "valid.emailInvalid")), so scan every string literal in
+  // js/ — except i18n.js itself, where the definitions live.
+  const referenced = new Set();
+  for (const f of sourceFiles()) {
+    if (f.endsWith("i18n.js")) continue;
+    const txt = fs.readFileSync(f, "utf8");
+    for (const m of txt.matchAll(/"([a-zA-Z0-9._]+)"/g)) referenced.add(m[1]);
+    for (const m of txt.matchAll(/data-i18n="([a-zA-Z0-9._]+)"/g)) referenced.add(m[1]);
+  }
+  // diff.* is built at runtime as t("diff." + lesson.level).
+  const dynamic = (k) => k.startsWith("diff.");
+  const dead = Object.keys(I18N.strings.id).filter((k) => !dynamic(k) && !referenced.has(k));
+  assert.deepEqual(dead, [], `unused i18n keys (delete them or wire them up): ${dead.join(", ")}`);
+});
+
 test("every difficulty level used by the catalogue has a label", () => {
   const levels = new Set(COURSES.flatMap((c) => c.lessons.map((l) => l.level)));
   for (const lv of levels) {

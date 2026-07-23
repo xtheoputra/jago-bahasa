@@ -184,8 +184,8 @@ export function renderHome(view) {
         <span>${daily.xp} / ${daily.goal} XP${daily.hit ? " · " + esc(t("daily.hit")) : ""}</span>
       </div>
       <div class="daily-card__actions">
-        <a class="btn btn--sm btn--accent" href="#/mix">${esc(t("mix.go"))}</a>
-        ${mistakes ? `<a class="btn btn--sm" href="#/mistakes">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
+        <a class="btn btn--sm btn--accent" href="#/mix" aria-label="${esc(t("mix.sub"))}">${esc(t("mix.go"))}</a>
+        ${mistakes ? `<a class="btn btn--sm" href="#/mistakes" aria-label="${esc(t("mistakes.count", mistakes))}">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
       </div>
     </div>
 
@@ -237,7 +237,7 @@ export function renderHome(view) {
 export function renderCourses(view) {
   view.innerHTML = `
     <div class="section-head"><div><h2>${esc(t("courses.title"))}</h2><p>${esc(t("courses.sub"))}</p></div>
-      <span class="chip" id="courseCount">${COURSES.length} ${esc(t("courses.languages"))}</span>
+      <span class="chip" id="courseCount" aria-live="polite">${COURSES.length} ${esc(t("courses.languages"))}</span>
     </div>
     <div class="course-filter card">
       <input type="search" id="courseQ" class="dict-search" placeholder="${esc(t("courses.filter"))}"
@@ -287,7 +287,7 @@ export function renderCourse(view, [cid]) {
       </div>
       <div class="progress-wrap">
         <div style="display:flex;justify-content:space-between;font-size:.82rem;font-weight:700;color:var(--text-dim);margin-bottom:6px"><span>${p.done}/${p.total}</span><span>${p.pct}%</span></div>
-        <div class="progress"><i style="width:${p.pct}%"></i></div>
+        <div class="progress" aria-hidden="true"><i style="width:${p.pct}%"></i></div>
       </div>
     </div>
     ${script ? `
@@ -427,7 +427,7 @@ export function renderProgress(view) {
         <div style="width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:1.6rem;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-700))">${lvl}</div>
         <div style="flex:1 1 240px">
           <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px"><span>${esc(t("level"))} ${lvl}</span><span style="color:var(--text-dim)">${into} / 200 XP</span></div>
-          <div class="progress"><i style="width:${(into / 200) * 100}%"></i></div>
+          <div class="progress" aria-hidden="true"><i style="width:${(into / 200) * 100}%"></i></div>
         </div>
       </div>
       <div class="stats" style="margin-top:18px">
@@ -450,8 +450,8 @@ export function renderProgress(view) {
         </div>
       </div>
       <div class="daily-card__actions">
-        <a class="btn btn--sm btn--accent" href="#/mix">${esc(t("mix.go"))}</a>
-        ${mistakes ? `<a class="btn btn--sm" href="#/mistakes">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
+        <a class="btn btn--sm btn--accent" href="#/mix" aria-label="${esc(t("mix.sub"))}">${esc(t("mix.go"))}</a>
+        ${mistakes ? `<a class="btn btn--sm" href="#/mistakes" aria-label="${esc(t("mistakes.count", mistakes))}">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
         ${favs ? `<a class="btn btn--sm" href="#/favorites">⭐ ${esc(t("fav.title"))} · ${favs}</a>` : ""}
       </div>
     </div>
@@ -605,6 +605,8 @@ export function renderStats(view) {
     cells.push(`<span class="hm-cell hm-${bucket(xp)}" title="${esc(d)} · ${xp} XP"></span>`);
   }
   const activeCount = dates.filter((d) => (st.activeDays || []).includes(d)).length;
+  // 182 individual cells would be read out one by one; expose one summary instead.
+  const heatmapLabel = `${t("stats.heatmap")} — ${t("stats.activeDays")}: ${activeCount}/${DAYS}`;
 
   // XP trend — last 14 days as bars.
   const trend = store.xpTrend(14);
@@ -641,13 +643,13 @@ export function renderStats(view) {
 
     <div class="card" style="padding:18px;margin-bottom:20px;overflow-x:auto">
       <h3 style="font-size:1.05rem;margin:0 0 12px">🗓️ ${esc(t("stats.heatmap"))}</h3>
-      <div class="heatmap">${cells.join("")}</div>
-      <div class="hm-legend">${esc(t("stats.less"))} <span class="hm-cell hm-0"></span><span class="hm-cell hm-1"></span><span class="hm-cell hm-2"></span><span class="hm-cell hm-3"></span><span class="hm-cell hm-4"></span> ${esc(t("stats.more"))}</div>
+      <div class="heatmap" role="img" aria-label="${esc(heatmapLabel)}">${cells.join("")}</div>
+      <div class="hm-legend" aria-hidden="true">${esc(t("stats.less"))} <span class="hm-cell hm-0"></span><span class="hm-cell hm-1"></span><span class="hm-cell hm-2"></span><span class="hm-cell hm-3"></span><span class="hm-cell hm-4"></span> ${esc(t("stats.more"))}</div>
     </div>
 
     <div class="card" style="padding:18px;margin-bottom:20px">
       <h3 style="font-size:1.05rem;margin:0 0 12px">📈 ${esc(t("stats.trend"))}</h3>
-      <div class="trend">${trend.map((d) => `<div class="trend-bar" title="${esc(d.date)} · ${d.xp} XP"><i style="height:${Math.round((d.xp / maxT) * 100)}%"></i></div>`).join("")}</div>
+      <div class="trend" role="img" aria-label="${esc(t("stats.trend"))}">${trend.map((d) => `<div class="trend-bar" title="${esc(d.date)} · ${d.xp} XP"><i style="height:${Math.round((d.xp / maxT) * 100)}%"></i></div>`).join("")}</div>
     </div>
 
     ${accRows.length ? `
@@ -656,7 +658,7 @@ export function renderStats(view) {
       ${accRows.map((r) => `
         <div class="bar-row">
           <span class="bar-row__lbl">${r.e} ${esc(t(r.k))}</span>
-          <div class="progress" style="flex:1"><i style="width:${r.a.pct}%"></i></div>
+          <div class="progress" style="flex:1" aria-hidden="true"><i style="width:${r.a.pct}%"></i></div>
           <span class="bar-row__val">${r.a.pct}% <small>(${r.a.ok}/${r.a.tries})</small></span>
         </div>`).join("")}
     </div>` : ""}
@@ -667,7 +669,7 @@ export function renderStats(view) {
       ${langRows.map((c) => `
         <div class="bar-row">
           <span class="bar-row__lbl">${esc(c.flag)} ${esc(mean(c.name))}</span>
-          <div class="progress" style="flex:1"><i style="width:${Math.round((wbc[c.id] / maxW) * 100)}%"></i></div>
+          <div class="progress" style="flex:1" aria-hidden="true"><i style="width:${Math.round((wbc[c.id] / maxW) * 100)}%"></i></div>
           <span class="bar-row__val">${wbc[c.id]}</span>
         </div>`).join("")}
     </div>` : ""}

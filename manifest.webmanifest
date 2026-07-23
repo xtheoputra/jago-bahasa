@@ -57,6 +57,18 @@
       "short_name": "Katalog",
       "url": "./index.html#/courses",
       "description": "Jelajahi semua bahasa"
+    },
+    {
+      "name": "Campur Cepat",
+      "short_name": "Campur",
+      "url": "./index.html#/mix",
+      "description": "10 soal acak dari kata yang sudah dipelajari"
+    },
+    {
+      "name": "Kamus",
+      "short_name": "Kamus",
+      "url": "./index.html#/search",
+      "description": "Cari kata di seluruh katalog"
     }
   ]
 }

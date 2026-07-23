@@ -84,11 +84,19 @@ function render(hash) {
   return { dom: String(res.stdout || ""), errors };
 }
 
-/** Assert a route renders, contains every marker, and logs nothing. */
+/** Assert a route renders, contains every marker, and logs nothing.
+ *  The router mounts `<div class="view">`; when the test files run in parallel
+ *  a loaded machine can occasionally dump the DOM before the modules have
+ *  executed, so retry until the view is actually mounted. */
 function expectRoute(hash, markers) {
-  const { dom, errors } = render(hash);
+  let dom = "",
+    errors = [];
+  for (let attempt = 0; attempt < 3; attempt++) {
+    ({ dom, errors } = render(hash));
+    if (dom.includes('class="view"')) break;
+  }
   assert.deepEqual(errors, [], `${hash} logged console errors`);
-  assert.ok(dom.length > 3000, `${hash} rendered only ${dom.length} bytes`);
+  assert.ok(dom.includes('class="view"'), `${hash} never mounted a view (${dom.length} bytes)`);
   for (const m of markers) assert.ok(dom.includes(m), `${hash} is missing "${m}"`);
   return dom;
 }
@@ -131,6 +139,22 @@ test("quiz, dictionary, progress and stats all render", opts, () => {
 });
 
 test("an unknown route shows the 404 view", opts, () => {
-  const { dom } = render("#/definitely-not-a-route");
-  assert.ok(dom.includes("404"), "no 404 view rendered");
+  assert.ok(expectRoute("#/definitely-not-a-route", ["404"]));
+});
+
+test("practice views carry the accessibility affordances they claim", opts, () => {
+  // A flashcard is a toggle button; its pressed state must be exposed.
+  const flash = expectRoute("#/flashcards/el/num", ['id="fcard"', 'aria-pressed="false"']);
+  assert.match(flash, /role="button"/);
+
+  // Typed feedback is injected after the answer — it needs a live region.
+  const type = expectRoute("#/type/sw/color", ['id="typeFb"', 'role="status"']);
+  assert.match(type, /class="visually-hidden">[^<]+<\/h2>/, "typing view has no heading");
+
+  // Duplicated progress bars are hidden so screen readers hear the "n of m" chip once.
+  assert.match(type, /class="progress" aria-hidden="true"/);
+
+  // The 182-cell heatmap is one labelled image, not 182 announcements.
+  const stats = expectRoute("#/stats", ['class="heatmap" role="img"']);
+  assert.match(stats, /aria-label="[^"]+"/);
 });

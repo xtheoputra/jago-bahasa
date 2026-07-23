@@ -388,3 +388,93 @@ family · convo · shop · travel · health · weather · convo2 · color · bod
 ---
 
 *Diperbarui — v2.12 2026-07-23 (3 bahasa baru: +48 pelajaran, +378 kata, +12 dialog, +2 pelatih aksara; mode Dikte, Kata Hari Ini, filter katalog; 6 perbaikan bug).*
+
+---
+
+## Pembaruan v2.9–v2.11 — Multi-Pembicara & 10 Mode Latihan (2026-07-16) — *catatan susulan*
+
+Ditulis susulan pada 2026-07-23: rilis ini sudah masuk lewat commit `7baffb0` tetapi belum
+sempat dicatat di dokumen ini. Ringkasannya:
+
+- **Konten:** percakapan multi-pembicara A/B/C/D — 2 pelajaran baru per bahasa × 20
+  (obrolan grup "Rencana Akhir Pekan" dan dialog panjang 12 baris "Di Hotel"), lengkap
+  dengan romanisasi untuk 7 aksara non-Latin. `dialogHTML` diperluas agar mendukung lebih
+  dari dua pembicara (posisi kiri/kanan + warna avatar per orang).
+- **10 mode latihan baru:** Ketik, Simak, Jodohkan, Ucap (Web Speech Recognition),
+  Dengar Tanpa Tangan, Pembangun Kalimat, Pelatih Aksara (`js/scripts.js`), Campur Cepat,
+  Perbaiki Kesalahan, Favorit.
+- **Kebiasaan & wawasan:** Target Harian, streak freeze + rekor streak, riwayat XP harian,
+  tally akurasi per mode, halaman **Statistik** (heatmap 26 minggu, tren XP, akurasi,
+  kata per bahasa), pengingat belajar.
+- **Personalisasi & data:** 5 warna aksen, teks besar, mode ramah disleksia,
+  ekspor/impor progres JSON, 16 pencapaian bertingkat.
+- SW `jb-v2.8.0` → **`jb-v2.11.0`**, paritas i18n 318 kunci di id/en/es.
+
+---
+
+## Pembaruan v2.13 — Harness Uji, Aksesibilitas & Kontras (2026-07-23)
+
+Permintaan pengguna: memilih keempat pekerjaan lanjutan sekaligus. Ini dua tahap pertama.
+
+### 1. Harness uji di dalam repo — `npm test`
+Selama ini setiap verifikasi ditulis ulang manual di scratchpad tiap sesi. Sekarang jadi bagian repo:
+**85 tes, ±5 detik, nol dependency** (test runner bawaan Node, butuh Node ≥ 18).
+
+- `tests/content.test.mjs` — bentuk katalog: metadata 3 bahasa lengkap, ≥4 arti unik per pelajaran
+  (kuis butuh 4 opsi), romanisasi wajib untuk 9 kursus beraksara non-Latin, panjang `dialog` =
+  jumlah baris, Isian & Pembangun Kalimat terbukti bisa dimainkan di **tiap** kursus.
+- `tests/state.test.mjs` — SRS (termasuk regresi zona waktu `parseISO`, lantai ease 1.3, pertumbuhan
+  interval), target harian, retensi riwayat, ekspor/impor, isolasi progres antar-akun.
+- `tests/i18n.test.mjs` — paritas kunci id/en/es, tak ada terjemahan kosong, jumlah `%s` sama,
+  semua kunci yang dipakai kode ada, **dan tak ada kunci yang menganggur**.
+- `tests/assets.test.mjs` — tiap modul JS ada di precache `sw.js` & sebaliknya, manifest + ikon valid,
+  CSP `index.html` utuh, hanya satu skrip inline (yang di-hash).
+- `tests/contrast.test.mjs` — rasio kontras WCAG dihitung langsung dari token CSS, terang & gelap.
+- `tests/server.test.mjs` — `node server.js` sungguhan di port acak + `DATA_DIR` sementara: MIME,
+  header keamanan, modul hilang → 404 (bukan cangkang HTML), fallback SPA, blokir `server/`/dotfile/
+  path-traversal, alur daftar→masuk→sinkron→keluar, penolakan CSRF, anti-enumerasi login,
+  batas 5 pendaftaran/jam, dan sandi tak pernah tersimpan polos.
+- `tests/smoke.test.mjs` — headless Chrome merender 11 rute, **console wajib bersih**; dilewati
+  otomatis bila Chrome tidak ada (`CHROME_PATH`).
+
+`js/package.json` berisi `{"type":"module"}` agar Node bisa meng-`import` modul ES di `js/` langsung
+(peramban mengabaikannya; root tetap `commonjs` untuk server).
+
+### 2. Aksesibilitas & kontras
+**Temuan kontras (semua di tema terang, ditemukan oleh tes, bukan tebakan):**
+
+| Token | Sebelum | Sesudah | Catatan |
+|---|---|---|---|
+| `--text-faint` | 2,89:1 di `--surface-3` | **4,79:1** (`#6f7590`) | teks sekunder di bawah ambang 3:1 |
+| `--success` sebagai teks | 1,74:1 | **5,01:1** (`--success-text: #0a785d`) | mint hanya layak jadi isian |
+| `--danger` sebagai teks | 2,94:1 | **5,44:1** (`--danger-text: #d1123a`) | dipakai umpan balik salah & galat form |
+| `--accent` sebagai teks/ikon | 2,04:1 | **5,33:1** (`--accent-text: #a75500`) | chip, XP pop, bintang favorit |
+| Teks putih di `.btn--danger` | 2,94:1 | **4,56:1** (`--danger-600`) | isian tombol digelapkan |
+| Batas kontrol interaktif | 1,39:1 | **≥3:1** (`--line-input`) | WCAG 1.4.11 untuk input/opsi/chip |
+
+Warna **isian** (mint, koral, oranye) tidak diubah — hanya kembarannya untuk teks yang ditambahkan,
+sehingga identitas visual tetap sama.
+
+**Perbaikan ARIA:**
+- Umpan balik Ketik/Dikte/Ucap/Pembangun Kalimat kini `role="status"` (otomatis dibacakan).
+- Hasil pilihan ganda (Kuis, Simak, Campur, Isian, Perbaiki Kesalahan) diumumkan lewat live region —
+  sebelumnya benar/salah hanya disampaikan lewat warna.
+- Flashcard: `aria-pressed` + mengumumkan sisi yang sedang tampak.
+- Jodohkan: pasangan yang cocok jadi `disabled` (keluar dari urutan tab) + progres diumumkan.
+- Heatmap 182 sel → satu `role="img"` berlabel ringkasan, bukan 182 pembacaan.
+- Bilah progres yang menduplikasi teks "n dari m" di sebelahnya → `aria-hidden`.
+- Mode latihan kini punya judul (`<h2 class="visually-hidden">`) sebagai penanda halaman.
+- Tombol Campur Cepat & Perbaiki Kesalahan diberi `aria-label` kalimat penuh.
+
+**PWA:** shortcut manifest bertambah (Campur Cepat, Kamus) jadi 4; service worker punya halaman
+offline terakhir bila cangkang aplikasi belum pernah tersimpan.
+
+**i18n:** 25 kunci mati dihapus dari ketiga tabel (328 → 303 kunci), kunci yang berguna justru
+dipakai (judul mode, `mix.sub`, `mistakes.count`, dan pemberitahuan "progres tamu digabungkan"
+yang selama ini tak pernah muncul). Tes baru menjaga agar tak ada kunci menganggur lagi.
+
+SW `jb-v2.12.0` → **`jb-v2.13.0`**.
+
+---
+
+*Diperbarui — v2.13 2026-07-23 (harness uji 85 tes; 6 perbaikan kontras WCAG; 8 perbaikan ARIA; 25 kunci i18n mati dibersihkan).*

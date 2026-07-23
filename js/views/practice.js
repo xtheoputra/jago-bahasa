@@ -4,7 +4,7 @@
    automatically on navigation (no listener stacking).
    ========================================================================= */
 import { $, $$, esc, mean } from "../core/dom.js";
-import { confetti, toast, speak, stopSpeak } from "../core/ui.js";
+import { confetti, toast, speak, stopSpeak, liveStatus } from "../core/ui.js";
 import { findScript } from "../scripts.js";
 import { shuffle } from "../core/random.js";
 import * as store from "../core/state.js";
@@ -14,6 +14,12 @@ import { navigate } from "../core/router.js";
 import { I18N } from "../i18n.js";
 
 const t = (...a) => I18N.t(...a);
+
+/** Announce the outcome of a multiple-choice answer. Colour and position carry
+ *  that information visually; screen-reader users need it spoken. */
+function announceResult(ok, answer) {
+  liveStatus(ok ? t("mode.correct") : `${t("mode.wrong")} — ${t("mode.answer")}: ${answer}`);
+}
 
 /* =====================================================================
    FLASHCARDS
@@ -31,7 +37,7 @@ export function renderFlashcards(view, [cid, lid], ctx) {
     <nav class="crumb"><a href="#/lesson/${c.id}/${l.id}">‹ ${esc(mean(l.title))}</a></nav>
     <div class="flash-wrap">
       <div class="flash-count" id="fcount"></div>
-      <div class="flashcard" id="fcard" tabindex="0" role="button" aria-label="${esc(t("flash.tap"))}">
+      <div class="flashcard" id="fcard" tabindex="0" role="button" aria-pressed="false" aria-label="${esc(t("flash.tap"))}">
         <div class="flashcard__inner">
           <div class="flashcard__face flashcard__front">
             <div class="big ${c.cjk ? "cjk" : ""}" id="fterm" dir="${c.rtl ? "rtl" : "ltr"}"></div>
@@ -57,6 +63,7 @@ export function renderFlashcards(view, [cid, lid], ctx) {
     const it = l.items[i];
     flipped = false;
     card.classList.remove("flipped");
+    card.setAttribute("aria-pressed", "false");
     $("#fcount").textContent = `${i + 1} / ${total}`;
     $("#fterm").textContent = it.term;
     $("#fread").textContent = it.reading || "";
@@ -67,6 +74,9 @@ export function renderFlashcards(view, [cid, lid], ctx) {
   const flip = () => {
     flipped = !flipped;
     card.classList.toggle("flipped", flipped);
+    card.setAttribute("aria-pressed", flipped ? "true" : "false");
+    // The face swap is a CSS 3D flip; announce what is now showing.
+    liveStatus(flipped ? mean(l.items[i].m) : l.items[i].term);
   };
   card.onclick = flip;
   $("#fprev").onclick = () => {
@@ -133,7 +143,7 @@ export function renderQuiz(view, [cid, lid], ctx) {
       <nav class="crumb"><a href="#/lesson/${c.id}/${l.id}">‹ ${esc(mean(l.title))}</a></nav>
       <div class="quiz-wrap">
         <div class="quiz-top">
-          <div class="progress"><i style="width:${(qi / questions.length) * 100}%"></i></div>
+          <div class="progress" aria-hidden="true"><i style="width:${(qi / questions.length) * 100}%"></i></div>
           <span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${questions.length}</span>
         </div>
         <div class="card quiz-q">
@@ -162,6 +172,7 @@ export function renderQuiz(view, [cid, lid], ctx) {
           else if (b === btn) b.classList.add("wrong");
         });
         const mkey = `${c.id}/${l.id}#${l.items.indexOf(q.it)}`;
+        announceResult(correct, mean(q.it.m));
         store.recordAttempt("quiz", correct);
         if (correct) {
           score++;
@@ -271,7 +282,7 @@ function runReviewSession(view, queue, ctx) {
       <nav class="crumb"><a href="#/progress">‹ ${esc(t("review.back"))}</a></nav>
       <div class="review-wrap">
         <div class="review-top">
-          <div class="progress"><i style="width:${(idx / queue.length) * 100}%"></i></div>
+          <div class="progress" aria-hidden="true"><i style="width:${(idx / queue.length) * 100}%"></i></div>
           <span class="chip">${idx + 1} / ${queue.length}</span>
         </div>
         <div class="card review-card">
@@ -392,7 +403,7 @@ export function renderCloze(view, [cid, lid], ctx) {
       <nav class="crumb"><a href="#/lesson/${c.id}/${l.id}">‹ ${esc(mean(l.title))}</a></nav>
       <div class="quiz-wrap">
         <div class="quiz-top">
-          <div class="progress"><i style="width:${(qi / qs.length) * 100}%"></i></div>
+          <div class="progress" aria-hidden="true"><i style="width:${(qi / qs.length) * 100}%"></i></div>
           <span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${qs.length}</span>
         </div>
         <div class="card quiz-q">
@@ -417,6 +428,7 @@ export function renderCloze(view, [cid, lid], ctx) {
           else if (b === btn) b.classList.add("wrong");
         });
         // Feed the same accuracy stats + mistakes deck as every other mode.
+        announceResult(correct, q.it.term);
         store.recordAttempt("cloze", correct);
         if (correct) {
           score++;
@@ -571,8 +583,9 @@ function mcSession(view, deck, ctx, opts) {
     view.innerHTML = `
       <nav class="crumb"><a href="${opts.backHash}">‹ ${esc(opts.backLabel)}</a></nav>
       <div class="quiz-wrap">
+        <h2 class="visually-hidden">${esc(opts.title || opts.backLabel)}</h2>
         <div class="quiz-top">
-          <div class="progress"><i style="width:${(qi / questions.length) * 100}%"></i></div>
+          <div class="progress" aria-hidden="true"><i style="width:${(qi / questions.length) * 100}%"></i></div>
           <span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${questions.length}</span>
         </div>
         <div class="card quiz-q">
@@ -600,6 +613,7 @@ function mcSession(view, deck, ctx, opts) {
           if (o === it) b.classList.add("correct");
           else if (b === btn) b.classList.add("wrong");
         });
+        announceResult(correct, mean(it.m));
         store.recordAttempt(opts.mode || "mix", correct);
         if (correct) {
           score++;
@@ -643,8 +657,9 @@ export function renderType(view, [cid, lid], ctx) {
     view.innerHTML = `
       <nav class="crumb"><a href="${back}">‹ ${esc(mean(l.title))}</a></nav>
       <div class="quiz-wrap">
+        <h2 class="visually-hidden">${esc(t("type.title"))}</h2>
         <div class="quiz-top">
-          <div class="progress"><i style="width:${(qi / deck.length) * 100}%"></i></div>
+          <div class="progress" aria-hidden="true"><i style="width:${(qi / deck.length) * 100}%"></i></div>
           <span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${deck.length}</span>
         </div>
         <div class="card quiz-q">
@@ -656,7 +671,7 @@ export function renderType(view, [cid, lid], ctx) {
           <input class="type-input ${c.cjk ? "cjk" : ""}" id="typeInput" dir="${c.rtl ? "rtl" : "ltr"}"
             placeholder="${esc(t("type.placeholder"))}" aria-label="${esc(t("type.prompt"))}"
             autocapitalize="none" autocorrect="off" spellcheck="false" />
-          <div class="type-feedback" id="typeFb" hidden></div>
+          <div class="type-feedback" id="typeFb" role="status" hidden></div>
           <div class="practice-bar" style="justify-content:center;margin-top:14px">
             <button type="button" class="btn btn--ghost" id="typeSkip">${esc(t("mode.skip"))}</button>
             <button type="submit" class="btn btn--accent" id="typeCheck">${esc(t("mode.check"))}</button>
@@ -733,6 +748,7 @@ export function renderListen(view, [cid, lid], ctx) {
   mcSession(view, deck, ctx, {
     audioOnly: true,
     ask: t("listen.prompt"),
+    title: t("listen.title"),
     backHash: back,
     backLabel: mean(l.title),
     counter: "listened",
@@ -771,8 +787,9 @@ export function renderDictation(view, [cid, lid], ctx) {
     view.innerHTML = `
       <nav class="crumb"><a href="${back}">‹ ${esc(mean(l.title))}</a></nav>
       <div class="quiz-wrap">
+        <h2 class="visually-hidden">${esc(t("dictation.title"))}</h2>
         <div class="quiz-top">
-          <div class="progress"><i style="width:${(qi / deck.length) * 100}%"></i></div>
+          <div class="progress" aria-hidden="true"><i style="width:${(qi / deck.length) * 100}%"></i></div>
           <span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${deck.length}</span>
         </div>
         <div class="card quiz-q">
@@ -786,7 +803,7 @@ export function renderDictation(view, [cid, lid], ctx) {
           <input class="type-input ${c.cjk ? "cjk" : ""}" id="dicInput" dir="${c.rtl ? "rtl" : "ltr"}"
             placeholder="${esc(t("dictation.placeholder"))}" aria-label="${esc(t("dictation.prompt"))}"
             autocapitalize="none" autocorrect="off" spellcheck="false" />
-          <div class="type-feedback" id="dicFb" hidden></div>
+          <div class="type-feedback" id="dicFb" role="status" hidden></div>
           <div class="practice-bar" style="justify-content:center;margin-top:14px">
             <button type="button" class="btn btn--ghost" id="dicSkip">${esc(t("mode.skip"))}</button>
             <button type="submit" class="btn btn--accent" id="dicCheck">${esc(t("mode.check"))}</button>
@@ -921,16 +938,21 @@ export function renderMatch(view, [cid, lid], ctx) {
       // opposite columns — check the pair
       if (selected.id === id) {
         selected.el.classList.remove("sel");
-        selected.el.classList.add("done");
-        cell.classList.add("done");
+        // .done hides the pair visually — take it out of the tab order too.
+        for (const el of [selected.el, cell]) {
+          el.classList.add("done");
+          el.disabled = true;
+        }
         selected = null;
         matched++;
         speak(picks[id].it.term, c.speech);
+        liveStatus(`${t("mode.correct")} — ${matched}/${picks.length}`);
         if (matched === picks.length) win();
       } else {
         const a = selected.el;
         a.classList.add("bad");
         cell.classList.add("bad");
+        liveStatus(t("mode.wrong"));
         clearSel();
         setTimeout(() => {
           a.classList.remove("bad");
@@ -1035,7 +1057,7 @@ export function renderSpeak(view, [cid, lid], ctx) {
       <nav class="crumb"><a href="${back}">‹ ${esc(mean(l.title))}</a></nav>
       <div class="quiz-wrap">
         <div class="quiz-top">
-          <div class="progress"><i style="width:${(qi / deck.length) * 100}%"></i></div>
+          <div class="progress" aria-hidden="true"><i style="width:${(qi / deck.length) * 100}%"></i></div>
           <span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${deck.length}</span>
         </div>
         <div class="card quiz-q">
@@ -1048,7 +1070,7 @@ export function renderSpeak(view, [cid, lid], ctx) {
         <div class="speak-zone">
           <button class="mic-btn" id="micBtn" aria-label="${esc(t("speak.tap"))}">🎤</button>
           <div class="speak-hint" id="micHint">${esc(t("speak.tap"))}</div>
-          <div class="type-feedback" id="micFb" hidden></div>
+          <div class="type-feedback" id="micFb" role="status" hidden></div>
         </div>
         <div class="practice-bar" style="justify-content:center">
           <button class="btn btn--ghost" id="spkSkip">${esc(t("mode.skip"))}</button>
@@ -1253,11 +1275,11 @@ export function renderBuild(view, [cid, lid], ctx) {
     view.innerHTML = `
       ${crumb}
       <div class="quiz-wrap">
-        <div class="quiz-top"><div class="progress"><i style="width:${(qi / qs.length) * 100}%"></i></div><span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${qs.length}</span></div>
+        <div class="quiz-top"><div class="progress" aria-hidden="true"><i style="width:${(qi / qs.length) * 100}%"></i></div><span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${qs.length}</span></div>
         <div class="card quiz-q"><div class="ask">🧩 ${esc(t("build.prompt"))}</div><div class="build-mean">${esc(mean(q.it.ex.m))}</div></div>
         <div class="build-answer" id="buildAns" aria-live="polite"></div>
         <div class="build-bank" id="buildBank"></div>
-        <div class="type-feedback" id="buildFb" hidden></div>
+        <div class="type-feedback" id="buildFb" role="status" hidden></div>
         <div class="practice-bar" style="justify-content:center">
           <button class="btn btn--ghost" id="buildUndo">↶ ${esc(t("build.undo"))}</button>
           <button class="btn btn--accent" id="buildCheck">${esc(t("mode.check"))}</button>

@@ -2,7 +2,7 @@
    Jago Bahasa — Service Worker (offline-first app shell)
    v2: ES-module precache, /api network-only, no HTML fallback for assets.
    ========================================================================= */
-const VERSION = "jb-v2.12.0";
+const VERSION = "jb-v2.13.0";
 const CACHE = `jagobahasa-${VERSION}`;
 
 const ASSETS = [
@@ -56,6 +56,21 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+/** Last-resort offline page, used only when the app shell was never cached. */
+function offlinePage() {
+  return new Response(
+    `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">
+     <meta name="viewport" content="width=device-width,initial-scale=1"><title>Jago Bahasa — Offline</title>
+     <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f1226;color:#eef0ff;
+     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-align:center;padding:24px}
+     p{color:#aab0d8;max-width:34ch;line-height:1.6}</style></head>
+     <body><div><div style="font-size:3rem">📴</div><h1>Offline</h1>
+     <p>Buka Jago Bahasa sekali saat online agar aplikasinya tersimpan untuk dipakai offline.</p>
+     <p>Open Jago Bahasa once while online so it can be stored for offline use.</p></div></body></html>`,
+    { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } }
+  );
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
@@ -69,8 +84,14 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   // Navigations: network first, fall back to the cached shell when offline.
+  // If even the shell is missing (first visit made offline), answer with a
+  // readable page instead of the browser's raw network error.
   if (req.mode === "navigate") {
-    event.respondWith(fetch(req).catch(() => caches.match("./index.html")));
+    event.respondWith(
+      fetch(req).catch(() =>
+        caches.match("./index.html").then((cached) => cached || offlinePage())
+      )
+    );
     return;
   }
 

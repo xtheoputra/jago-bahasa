@@ -478,3 +478,68 @@ SW `jb-v2.12.0` → **`jb-v2.13.0`**.
 ---
 
 *Diperbarui — v2.13 2026-07-23 (harness uji 85 tes; 6 perbaikan kontras WCAG; 8 perbaikan ARIA; 25 kunci i18n mati dibersihkan).*
+
+---
+
+## Pembaruan v2.14–v2.15 — Katalog Dipecah & Diperdalam (2026-07-23)
+
+Dua tahap terakhir dari empat pekerjaan yang dipilih pengguna.
+
+### 1. `js/data.js` dipecah + muat malas (v2.14)
+
+`data.js` sudah tumbuh jadi **631 kB** dan diurai seluruhnya setiap kali aplikasi dibuka —
+padahal beranda hanya butuh satu kata dan sebuah pelajaran hanya butuh satu bahasa.
+
+Sekarang `data.js` berisi **indeks** saja: metadata kursus/pelajaran plus `n` (jumlah kata),
+yang ternyata cukup untuk semua kartu, angka progres, dan enumerasi SRS. Kosakatanya pindah ke
+`js/data/<kode>.js`, dan `loadCourse()` menyuntikkannya ke objek pelajaran yang sama —
+jadi apa pun yang sudah memegang referensi pelajaran ikut melihat `items` terisi.
+
+| | Sebelum | Sesudah |
+|---|---|---|
+| Diurai saat mulai | 631 kB (gzip 115 kB) | **80 kB** (gzip 6 kB) |
+| Beranda (indeks + 1 kursus) | 631 kB | **101 kB** (gzip 14 kB) |
+| Jejak offline | 631 kB | 618 kB (semua potongan tetap di-precache) |
+
+Alih-alih membuat semua view async, **rutenya yang dibungkus** di `app.js`:
+`needsCourse` untuk `#/x/:kursus/:pelajaran`, `needsProgress` untuk dek Review/Perbaiki
+Kesalahan/Favorit/Campur Cepat, `needsAll` khusus Kamus (satu-satunya view yang memang butuh
+seluruh katalog). Pembungkusnya menampilkan skeleton, menunggu hanya potongan yang perlu, lalu
+membatalkan render bila pengguna sudah pindah halaman.
+
+Pendukung:
+- `state.srsKeys()` — menghitung kartu dari metadata saja, jadi beranda bisa menampilkan
+  "N siap diulang" tanpa mengunduh satu kursus pun.
+- `state.progressCourseIds()` — memberi tahu pembungkus potongan mana yang dibutuhkan sebuah dek.
+- **`mistakePool()`/`favPool()` kini melewati** entri yang kursusnya belum dimuat, bukan
+  memangkasnya. Ini penting: kursus yang belum dimuat *tidak punya* item, dan itu berbeda dari
+  kata yang dihapus — logika lama akan diam-diam menghapus dek kesalahan & favorit pengguna.
+- Kata Hari Ini memilih (kursus, pelajaran, indeks) dari metadata, merender skeleton, lalu terisi
+  begitu satu potongan itu tiba — beranda tetap seketika.
+
+### 2. Dua pelajaran baru untuk semua bahasa (v2.15)
+
+Hanya Inggris & Korea yang punya 30 pelajaran; 21 bahasa lain berhenti di 16–17. Dua tema yang
+belum dimiliki **satu pun** bahasa kini ditambahkan ke seluruh 23 kursus:
+
+- ⏰ **`time` — Waktu & Hari** (hari ini, besok, kemarin, sekarang, hari, minggu, bulan, tahun).
+  Sepuluh bahasa sudah punya `time` versi sendiri, jadi hanya 13 yang ditambahi.
+- 🏃 **`verbs` — Kata Kerja Sehari-hari** (pergi, datang, makan, minum, melihat, berbicara,
+  membaca, menulis) — ditambahkan ke **semua** 23 bahasa.
+
+Konsepnya identik lintas bahasa sehingga arti id/en/es persis sama; hanya `term` dan romanisasi
+yang berbeda per bahasa. Bahasa Hindi diberi catatan khusus karena "कल" berarti besok *dan*
+kemarin — dipakai bentuk pembeda `आने वाला कल` / `बीता कल` dan artinya menjelaskan hal itu.
+
+Total katalog: **23 kursus / 442 pelajaran / 3563 item** (dari 406/3275 pagi ini, dan 358/2897
+sebelum sesi hari ini).
+
+### Validasi
+`npm test` → **87 tes hijau**, termasuk penjaga baru bahwa `n` di indeks selalu sama dengan
+jumlah item di potongannya (inilah yang membuktikan 36 pelajaran baru mendarat benar di **dua**
+berkas), `loadCourse` idempoten, dan seluruh 23 potongan ada di daftar precache `sw.js`.
+Smoke test headless merender 11 rute tanpa error konsol. SW `jb-v2.13.0` → **`jb-v2.15.0`**.
+
+---
+
+*Diperbarui — v2.15 2026-07-23 (katalog dipecah: −84% beban parse saat mulai; +36 pelajaran, +288 kata di 23 bahasa).*

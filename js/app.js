@@ -4,7 +4,8 @@
    upgrades the session in the background, so nothing blocks on the network.
    ========================================================================= */
 import { I18N } from "./i18n.js";
-import { warmVoices } from "./core/ui.js";
+import { warmVoices, skeleton } from "./core/ui.js";
+import { COURSES, courseLoaded, loadCourses } from "./data.js";
 import { registerRoutes, startRouter, rerender } from "./core/router.js";
 import { session } from "./auth/session.js";
 import { getAuth } from "./auth/index.js";
@@ -25,28 +26,58 @@ import { renderDictionary } from "./views/dictionary.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
 import { notFound } from "./views/partials.js";
 
+/* ------------------------------------------------- lazy vocabulary loading
+   data.js ships only the catalogue index; the words for a course arrive on
+   demand. Rather than making every view async, routes are wrapped here: the
+   wrapper shows a skeleton, awaits exactly the chunks that route needs, and
+   bails out if the learner has already navigated somewhere else. */
+function awaitData(render, pick) {
+  return (view, params, ctx) => {
+    const ids = pick(params);
+    if (!ids.length || ids.every(courseLoaded)) return render(view, params, ctx);
+    view.innerHTML = skeleton(4);
+    loadCourses(ids)
+      .then(() => {
+        if (!(ctx && ctx.signal && ctx.signal.aborted)) render(view, params, ctx);
+      })
+      .catch(() => render(view, params, ctx));
+  };
+}
+/** Routes shaped #/thing/:courseId/:lessonId — one course is enough. */
+const needsCourse = (render) => awaitData(render, ([cid]) => (cid ? [cid] : []));
+/** Decks drawn from progress (review, mistakes, favourites, quick mix). */
+const needsProgress = (render) =>
+  awaitData(render, () => {
+    const ids = store.progressCourseIds();
+    // A brand-new learner has no progress; Quick Mix seeds from the first few
+    // courses instead, so make sure those are available.
+    return ids.length ? ids : COURSES.slice(0, 6).map((c) => c.id);
+  });
+/** The dictionary is the one view that genuinely needs the whole catalogue. */
+const needsAll = (render) => awaitData(render, () => COURSES.map((c) => c.id));
+
 /* ----------------------------------------------------------------- routes */
 registerRoutes({
   home: { render: renderHome },
   courses: { render: renderCourses },
-  search: { render: renderDictionary },
+  search: { render: needsAll(renderDictionary) },
   course: { render: renderCourse },
-  lesson: { render: renderLesson },
-  flashcards: { render: renderFlashcards },
-  quiz: { render: renderQuiz },
-  cloze: { render: renderCloze },
-  type: { render: renderType },
-  listen: { render: renderListen },
-  dictation: { render: renderDictation },
-  match: { render: renderMatch },
-  speak: { render: renderSpeak },
-  audio: { render: renderAudio },
-  build: { render: renderBuild },
+  lesson: { render: needsCourse(renderLesson) },
+  flashcards: { render: needsCourse(renderFlashcards) },
+  quiz: { render: needsCourse(renderQuiz) },
+  cloze: { render: needsCourse(renderCloze) },
+  type: { render: needsCourse(renderType) },
+  listen: { render: needsCourse(renderListen) },
+  dictation: { render: needsCourse(renderDictation) },
+  match: { render: needsCourse(renderMatch) },
+  speak: { render: needsCourse(renderSpeak) },
+  audio: { render: needsCourse(renderAudio) },
+  build: { render: needsCourse(renderBuild) },
   script: { render: renderScript },
-  mix: { render: renderDailyMix },
-  mistakes: { render: renderMistakes },
-  favorites: { render: renderFavorites },
-  review: { render: renderReview },
+  mix: { render: needsProgress(renderDailyMix) },
+  mistakes: { render: needsProgress(renderMistakes) },
+  favorites: { render: needsProgress(renderFavorites) },
+  review: { render: needsProgress(renderReview) },
   progress: { render: renderProgress },
   stats: { render: renderStats },
   about: { render: renderAbout },

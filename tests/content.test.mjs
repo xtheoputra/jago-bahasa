@@ -7,8 +7,11 @@
    ========================================================================= */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COURSES, findCourse, findLesson } from "../js/data.js";
+import { COURSES, findCourse, findLesson, loadAll, loadCourse, courseLoaded } from "../js/data.js";
 import { SCRIPTS, findScript } from "../js/scripts.js";
+
+// data.js ships metadata only; pull in every chunk before inspecting words.
+await loadAll();
 
 const UI_LANGS = ["id", "en", "es"];
 /** Courses whose terms are not written in the Latin alphabet: every item there
@@ -125,6 +128,24 @@ test("every course can actually play cloze and the sentence builder", () => {
     assert.ok(cloze >= 10, `${c.id}: only ${cloze} playable cloze questions`);
     if (!spaceless) assert.ok(build >= 10, `${c.id}: only ${build} playable sentence-builder questions`);
   }
+});
+
+test("the metadata index agrees with the loaded chunks", () => {
+  // `n` drives every word count, progress figure and SRS enumeration while a
+  // course is still unloaded — it must match the chunk exactly.
+  for (const c of COURSES) {
+    assert.ok(courseLoaded(c.id), `${c.id}: chunk js/data/${c.id}.js did not load`);
+    for (const l of c.lessons) {
+      assert.equal(l.n, l.items.length, `${c.id}/${l.id}: metadata says n=${l.n}, chunk has ${l.items.length}`);
+    }
+  }
+});
+
+test("loadCourse is idempotent and unknown ids resolve to null", async () => {
+  const before = findCourse("el").lessons[0].items;
+  await loadCourse("el");
+  assert.equal(findCourse("el").lessons[0].items, before, "reloading must not swap the item arrays");
+  assert.equal(await loadCourse("definitely-not-a-course"), null);
 });
 
 test("findCourse / findLesson resolve every id in the catalogue", () => {

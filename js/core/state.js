@@ -4,7 +4,7 @@
    When signed in with the cloud backend, saves are debounced-pushed via a
    pluggable `remote` adapter; on login, server progress is merged in.
    ========================================================================= */
-import { COURSES } from "../data.js";
+import { COURSES, courseLoaded } from "../data.js";
 
 const KEY_BASE = "jb.progress.v1";
 const nsKey = (uid) => `${KEY_BASE}::${uid || "guest"}`;
@@ -212,7 +212,8 @@ export function completeLesson(c, l, quizPct) {
   const key = `${c.id}/${l.id}`;
   const first = !state.doneLessons[key];
   state.doneLessons[key] = true;
-  state.learnedWords[key] = l.items.length;
+  // `n` comes from the metadata index, so this works even before the words load.
+  state.learnedWords[key] = l.n ?? l.items.length;
   if (quizPct != null && (state.quizScores[key] == null || quizPct > state.quizScores[key])) {
     state.quizScores[key] = quizPct;
   }
@@ -242,6 +243,32 @@ export function srsPool() {
     l.items.forEach((it, i) => out.push({ key: `${cid}/${lid}#${i}`, c, l, it }));
   }
   return out;
+}
+
+/** Card keys only, derived from the metadata index — no vocabulary needed.
+ *  Views that just want a "n cards due" badge use this instead of srsPool(),
+ *  so the home screen never has to download a course to draw a number. */
+export function srsKeys() {
+  const out = [];
+  for (const key of Object.keys(state.doneLessons)) {
+    const [cid, lid] = key.split("/");
+    const c = COURSES.find((x) => x.id === cid);
+    const l = c && c.lessons.find((x) => x.id === lid);
+    if (!c || !l) continue;
+    const n = l.n ?? l.items.length;
+    for (let i = 0; i < n; i++) out.push({ key: `${cid}/${lid}#${i}` });
+  }
+  return out;
+}
+
+/** Every course id this learner has touched — what the review/mistake/favourite
+ *  sessions need to load before they can resolve their decks. */
+export function progressCourseIds() {
+  const ids = new Set();
+  for (const k of Object.keys(state.doneLessons)) ids.add(k.split("/")[0]);
+  for (const k of Object.keys(state.mistakes || {})) ids.add(k.split("/")[0]);
+  for (const k of Object.keys(state.favorites || {})) ids.add(k.split("/")[0]);
+  return [...ids];
 }
 export function srsDue(pool) {
   const today = todayISO();
@@ -316,7 +343,9 @@ export function clearMistake(key) {
 export function mistakeCount() {
   return Object.keys(state.mistakes || {}).length;
 }
-/** Resolve mistake keys into live {c,l,it} entries, pruning any that no longer exist. */
+/** Resolve mistake keys into live {c,l,it} entries, pruning any that no longer exist.
+ *  Entries whose course hasn't been loaded yet are skipped, never pruned — an
+ *  unloaded course has no items, which is not the same as a deleted word. */
 export function mistakePool() {
   const out = [];
   let pruned = false;
@@ -327,6 +356,7 @@ export function mistakePool() {
     const l = c && c.lessons.find((x) => x.id === lid);
     const it = l && l.items[+idx];
     if (c && l && it) out.push({ key, c, l, it });
+    else if (c && !courseLoaded(cid)) continue;
     else {
       delete state.mistakes[key];
       pruned = true;
@@ -361,7 +391,8 @@ export function isFav(key) {
 export function favCount() {
   return Object.keys(state.favorites || {}).length;
 }
-/** Resolve favorite keys into live {key,c,l,it} entries, pruning stale ones. */
+/** Resolve favorite keys into live {key,c,l,it} entries, pruning stale ones.
+ *  Same rule as mistakePool(): an unloaded course is skipped, not pruned. */
 export function favPool() {
   const out = [];
   let pruned = false;
@@ -372,6 +403,7 @@ export function favPool() {
     const l = c && c.lessons.find((x) => x.id === lid);
     const it = l && l.items[+idx];
     if (c && l && it) out.push({ key, c, l, it });
+    else if (c && !courseLoaded(cid)) continue;
     else {
       delete state.favorites[key];
       pruned = true;

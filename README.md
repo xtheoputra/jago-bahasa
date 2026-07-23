@@ -133,8 +133,10 @@ Jago Bahasa/
 ├── css/styles.css          # Design system + komponen auth/akun
 ├── icons/                  # icon.svg + icon-{180,192,512}.png + maskable
 ├── js/
-│   ├── app.js              # Bootstrap (rute, auth, PWA)
-│   ├── i18n.js  data.js    # Antarmuka 3 bahasa · konten kursus
+│   ├── app.js              # Bootstrap (rute, auth, PWA, pemuatan malas per-rute)
+│   ├── i18n.js             # Antarmuka 3 bahasa
+│   ├── data.js             # Indeks katalog (metadata + loadCourse/loadAll)
+│   ├── data/<kode>.js      # Kosakata per bahasa, dimuat saat dibutuhkan
 │   ├── core/               # dom, ui, random (crypto Fisher–Yates), state, router
 │   ├── auth/               # crypto (PBKDF2), db (IndexedDB), local/remote provider, session, validate
 │   ├── views/              # learn, practice, auth, partials
@@ -148,24 +150,47 @@ Jago Bahasa/
 
 ## ➕ Menambah Bahasa / Pelajaran
 
-Cukup edit **`js/data.js`** — tambahkan objek kursus ke `COURSES` (ES module):
+Konten terbagi dua supaya aplikasi tidak perlu mengurai seluruh katalog tiap kali dibuka:
+
+**1. Metadata di `js/data.js`** — ringan, selalu dimuat (`n` = jumlah kata):
 
 ```js
 {
-  id: "it", flag: "🇮🇹", native: "Italiano", speech: "it-IT", cjk: false,
+  id: "it", flag: "🇮🇹", native: "Italiano", speech: "it-IT",
   name: { id: "Bahasa Italia", en: "Italian", es: "Italiano" },
   tagline: { id: "...", en: "...", es: "..." },
   lessons: [
-    { id: "greet", icon: "👋", level: "beginner",
-      title: { id: "Sapaan", en: "Greetings", es: "Saludos" },
-      items: [ { term: "Ciao", m: { id: "Halo", en: "Hello", es: "Hola" } } ] }
-  ]
+    { id: "greet", icon: "👋", level: "beginner", n: 7,
+      title: { id: "Sapaan", en: "Greetings", es: "Saludos" }, items: [] },
+  ],
 }
 ```
 
+**2. Kosakata di `js/data/it.js`** — dimuat saat kursusnya dibuka:
+
+```js
+export default {
+  greet: [
+    { term: "Ciao", m: { id: "Halo", en: "Hello", es: "Hola" } },
+  ],
+};
+```
+
 - `term` = kata target · `reading` = romanisasi (aksara non-Latin) · `m` = arti 3 bahasa · `ex` = contoh (opsional) · `speech` = kode BCP-47.
+- **Wajib:** `n` di metadata harus sama dengan jumlah item di berkas kursus, dan berkas baru harus masuk daftar `ASSETS` di `sw.js`. Keduanya dijaga oleh `npm test`.
 
 Kuis & flashcard otomatis menyesuaikan — tidak perlu mengubah kode lain.
+
+### ⚡ Kenapa dipecah?
+
+| | Sebelum | Sesudah |
+|---|---|---|
+| Diurai saat aplikasi dibuka | **631 kB** (gzip 115 kB) | **80 kB** indeks (gzip 6 kB) |
+| Beranda (indeks + 1 kursus untuk Kata Hari Ini) | 631 kB | **101 kB** (gzip 14 kB) |
+| Total offline (semua tetap di-precache) | 631 kB | 618 kB |
+
+Beban parse saat mulai turun **±84%**; seluruh katalog tetap tersedia offline karena semua
+potongan ikut di-precache service worker.
 
 ---
 

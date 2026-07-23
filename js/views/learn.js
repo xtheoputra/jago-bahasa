@@ -2,9 +2,9 @@
    views/learn.js — Content views: home, courses, course, lesson, progress, about.
    ========================================================================= */
 import { $, $$, esc, mean, fold } from "../core/dom.js";
-import { toast, confetti } from "../core/ui.js";
+import { toast, confetti, skeleton } from "../core/ui.js";
 import * as store from "../core/state.js";
-import { COURSES, findCourse, findLesson } from "../data.js";
+import { COURSES, findCourse, findLesson, loadCourse } from "../data.js";
 import {
   courseCardHTML, wireCourseCards, lessonRowHTML, vocabHTML, dialogHTML, wireSpeak, progRowHTML, notFound,
 } from "./partials.js";
@@ -45,52 +45,67 @@ function dayLetter(iso) {
 /* ------------------------------------------------------------ word of the day
    One word for the whole catalogue per calendar day, chosen by hashing the
    date — so it is stable across reloads and devices without storing anything,
-   and it rotates at local midnight like every other daily counter. */
-let WOD_INDEX = null;
-function wodIndex() {
-  if (WOD_INDEX) return WOD_INDEX;
-  WOD_INDEX = [];
+   and it rotates at local midnight like every other daily counter.
+
+   The pick is made from the metadata index alone (lesson item counts), so the
+   home screen downloads exactly ONE course chunk to show it — not the catalogue. */
+function wordOfDayRef() {
+  const slots = [];
+  let total = 0;
   for (const c of COURSES) {
     for (const l of c.lessons) {
       if (l.dialog) continue; // dialogue lines are sentences, not vocabulary
-      l.items.forEach((it, i) => WOD_INDEX.push({ c, l, it, key: `${c.id}/${l.id}#${i}` }));
+      const n = l.n ?? l.items.length;
+      if (!n) continue;
+      slots.push({ c, l, n, start: total });
+      total += n;
     }
   }
-  return WOD_INDEX;
-}
-function wordOfDay() {
-  const pool = wodIndex();
-  if (!pool.length) return null;
+  if (!total) return null;
   const iso = store.todayISO();
-  let h = 2166136261; // FNV-1a
+  let h = 2166136261; // FNV-1a over the date
   for (let i = 0; i < iso.length; i++) {
     h ^= iso.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return pool[Math.abs(h) % pool.length];
+  const pick = Math.abs(h) % total;
+  const slot = slots.find((s) => pick < s.start + s.n) || slots[slots.length - 1];
+  const i = pick - slot.start;
+  return { c: slot.c, l: slot.l, i, key: `${slot.c.id}/${slot.l.id}#${i}` };
 }
+
+/** Card shell — the word itself arrives when its course chunk lands. */
 function wordOfDayHTML(w) {
   if (!w) return "";
-  const faved = store.isFav(w.key);
   return `
     <section class="card wod" style="margin-top:20px">
       <div class="wod__head">
         <span class="eyebrow">🌟 ${esc(t("wod.title"))}</span>
         <a class="chip" href="#/lesson/${esc(w.c.id)}/${esc(w.l.id)}">${esc(w.c.flag)} ${esc(mean(w.c.name))}</a>
       </div>
-      <div class="wod__body">
-        <div class="wod__main" style="min-width:0">
-          <div class="wod__term ${w.c.cjk ? "cjk" : ""}" dir="${w.c.rtl ? "rtl" : "ltr"}">${esc(w.it.term)}</div>
-          ${w.it.reading ? `<div class="vocab__reading">${esc(w.it.reading)}</div>` : ""}
-          <div class="wod__mean">${esc(mean(w.it.m))}</div>
-          ${w.it.ex ? `<div class="vocab__ex">“${esc(w.it.ex.t)}” — ${esc(mean(w.it.ex.m))}</div>` : ""}
-        </div>
-        <div class="wod__actions">
-          <button class="speakbtn" data-speak="${esc(w.it.term)}" aria-label="🔊">🔊</button>
-          <button class="favbtn ${faved ? "on" : ""}" data-fav="${esc(w.key)}" aria-label="${esc(t("fav.toggle"))}" aria-pressed="${faved ? "true" : "false"}">${faved ? "★" : "☆"}</button>
-        </div>
-      </div>
+      <div class="wod__body" id="wodBody">${skeleton(2)}</div>
     </section>`;
+}
+
+/** Fill in the card once the vocabulary is in memory. */
+function paintWordOfDay(view, w) {
+  const body = $("#wodBody", view);
+  const it = w.l.items[w.i];
+  if (!body || !it) return;
+  const faved = store.isFav(w.key);
+  body.innerHTML = `
+    <div class="wod__main" style="min-width:0">
+      <div class="wod__term ${w.c.cjk ? "cjk" : ""}" dir="${w.c.rtl ? "rtl" : "ltr"}">${esc(it.term)}</div>
+      ${it.reading ? `<div class="vocab__reading">${esc(it.reading)}</div>` : ""}
+      <div class="wod__mean">${esc(mean(it.m))}</div>
+      ${it.ex ? `<div class="vocab__ex">“${esc(it.ex.t)}” — ${esc(mean(it.ex.m))}</div>` : ""}
+    </div>
+    <div class="wod__actions">
+      <button class="speakbtn" data-speak="${esc(it.term)}" aria-label="🔊">🔊</button>
+      <button class="favbtn ${faved ? "on" : ""}" data-fav="${esc(w.key)}" aria-label="${esc(t("fav.toggle"))}" aria-pressed="${faved ? "true" : "false"}">${faved ? "★" : "☆"}</button>
+    </div>`;
+  wireSpeak(body, w.c);
+  wireFavButtons(body);
 }
 
 /** Star/unstar buttons rendered by any view (delegated per button). */
@@ -127,16 +142,17 @@ function guestBannerHTML() {
     </div>`;
 }
 
-export function renderHome(view) {
+export function renderHome(view, _params, ctx) {
   const st = store.getState();
   const lvl = store.levelFromXp(st.xp);
   const last = st.lastCourse ? findCourse(st.lastCourse) : null;
   const popular = COURSES.slice(0, 4);
-  const srsPool = store.srsPool();
+  // Counts come from the metadata index, so the home screen never waits on data.
+  const srsPool = store.srsKeys();
   const srsDue = srsPool.length ? store.srsDue(srsPool).length : 0;
   const daily = store.dailyStatus();
   const mistakes = store.mistakeCount();
-  const wod = wordOfDay();
+  const wod = wordOfDayRef();
 
   const week = store.lastNDates(7);
   const streakCells = week
@@ -225,8 +241,13 @@ export function renderHome(view) {
     };
   }
   if (wod) {
-    wireSpeak($(".wod", view) || view, wod.c);
-    wireFavButtons(view);
+    // Fetch just this word's course in the background — the rest of the home
+    // screen is already interactive.
+    loadCourse(wod.c.id)
+      .then(() => {
+        if (!(ctx && ctx.signal && ctx.signal.aborted)) paintWordOfDay(view, wod);
+      })
+      .catch(() => {});
   }
   wireCourseCards(view);
 }
@@ -406,7 +427,7 @@ export function renderProgress(view) {
   const into = store.xpIntoLevel(st.xp);
   const any = store.doneCount() > 0 || st.xp > 0;
 
-  const srsPool = store.srsPool();
+  const srsPool = store.srsKeys(); // counts only — no vocabulary needed
   const srsDue = srsPool.length ? store.srsDue(srsPool).length : 0;
   const daily = store.dailyStatus();
   const mistakes = store.mistakeCount();

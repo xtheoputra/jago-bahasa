@@ -19,19 +19,26 @@ const norm = (s) =>
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "");
 
-/* Build the flat index once per module load (data is static). */
-const INDEX = [];
-for (const c of COURSES) {
-  for (const l of c.lessons) {
-    for (const it of l.items) {
-      const hay = norm(
-        [it.term, it.reading, it.m?.id, it.m?.en, it.m?.es, it.ex?.t, it.ex?.m?.id, it.ex?.m?.en, it.ex?.m?.es]
-          .filter(Boolean)
-          .join(" ")
-      );
-      INDEX.push({ c, l, it, hay });
+/* The flat index is built once, the first time the dictionary is opened — this
+   is the one view that genuinely needs every course in memory, so it pays the
+   loading cost itself instead of charging it to every other screen. */
+let INDEX = null;
+function buildIndex() {
+  if (INDEX) return INDEX;
+  INDEX = [];
+  for (const c of COURSES) {
+    for (const l of c.lessons) {
+      for (const it of l.items) {
+        const hay = norm(
+          [it.term, it.reading, it.m?.id, it.m?.en, it.m?.es, it.ex?.t, it.ex?.m?.id, it.ex?.m?.en, it.ex?.m?.es]
+            .filter(Boolean)
+            .join(" ")
+        );
+        INDEX.push({ c, l, it, hay });
+      }
     }
   }
+  return INDEX;
 }
 
 function resultHTML(rec) {
@@ -97,7 +104,7 @@ export function renderDictionary(view) {
       return;
     }
 
-    let matches = INDEX.filter((r) => {
+    let matches = buildIndex().filter((r) => {
       if (state.lang !== "all" && r.c.id !== state.lang) return false;
       if (state.level !== "all" && r.l.level !== state.level) return false;
       if (state.ex && !r.it.ex) return false;

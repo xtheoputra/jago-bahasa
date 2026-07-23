@@ -11,7 +11,8 @@ const t = (...a) => I18N.t(...a);
 
 export function courseCardHTML(c) {
   const p = courseProgress(c);
-  const totalWords = c.lessons.reduce((n, l) => n + l.items.length, 0);
+  // `n` is the metadata item count — no need to have downloaded the words.
+  const totalWords = c.lessons.reduce((n, l) => n + (l.n ?? l.items.length), 0);
   const cta = p.done > 0 ? t("courses.continue") : t("courses.start");
   // Pre-folded haystack so the catalogue filter can match on any spelling of
   // the language name (UI language, English, Spanish, endonym, or code).
@@ -61,7 +62,7 @@ export function lessonRowHTML(c, l, i, state) {
       <div class="lesson-row__num">${done ? "✓" : i + 1}</div>
       <div class="lesson-row__main">
         <h3>${esc(l.icon)} ${esc(mean(l.title))}</h3>
-        <p>${l.items.length} ${esc(t("words"))}${best != null ? ` • ${esc(t("lesson.quiz"))} ${best}%` : ""} • ${esc(t("diff." + l.level))}</p>
+        <p>${l.n ?? l.items.length} ${esc(t("words"))}${best != null ? ` • ${esc(t("lesson.quiz"))} ${best}%` : ""} • ${esc(t("diff." + l.level))}</p>
       </div>
       <div class="lesson-row__arrow">›</div>
     </div>`;

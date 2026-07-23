@@ -16,6 +16,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const sw = read("sw.js");
 const precached = new Set(
   (sw.match(/const ASSETS = \[([\s\S]*?)\];/)?.[1] || "")
+    .replace(/\/\*[\s\S]*?\*\//g, "") // the list is commented in places
     .split(",")
     .map((s) => s.trim().replace(/^"|"$/g, ""))
     .filter((s) => s.startsWith("./"))

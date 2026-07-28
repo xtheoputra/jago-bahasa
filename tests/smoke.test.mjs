@@ -146,6 +146,29 @@ test("quiz, dictionary, progress and stats all render", opts, () => {
   expectRoute("#/stats", ["heatmap", "hm-cell"]);
 });
 
+test("the dictionary shelf, a volume, an entry and the front matter render", opts, () => {
+  const shelf = expectRoute("#/search", ["shelf-book", 'href="#/dict/es"']);
+  assert.ok(shelf.includes("#/path"), "the shelf should link to the learning path");
+
+  const book = expectRoute("#/dict/es", ["book-header", "alpha-strip", "book-letter", "dict-entry"]);
+  assert.match(book, /data-band="B2"/, "the CEFR strip is missing");
+
+  const entry = expectRoute("#/entry/es/casa", ["entry__w", "entry__gloss", "entry__block"]);
+  assert.match(entry, /ˈka\.sa/, "the entry lost its pronunciation");
+  assert.ok(entry.includes("#/entry/"), "prev/next paging is missing");
+
+  expectRoute("#/guide/es", ["guide-table", "guide-grammar", "guide-block"]);
+});
+
+test("the zero→expert path renders its six stages and a playable drill", opts, () => {
+  expectRoute("#/path", ["stage-legend", "path-pick"]);
+  const path = expectRoute("#/path/ko", ["stages", "stage__can", 'href="#/drill/ko/A1"']);
+  const stages = path.match(/class="card stage /g) || [];
+  assert.ok(stages.length >= 6, `only ${stages.length} stages rendered`);
+
+  expectRoute("#/drill/ko/A1", ["quiz-options", "quiz-opt", "drill-def"]);
+});
+
 test("an unknown route shows the 404 view", opts, () => {
   assert.ok(expectRoute("#/definitely-not-a-route", ["404"]));
 });

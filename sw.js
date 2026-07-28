@@ -2,7 +2,7 @@
    Jago Bahasa — Service Worker (offline-first app shell)
    v2: ES-module precache, /api network-only, no HTML fallback for assets.
    ========================================================================= */
-const VERSION = "jb-v2.15.0";
+const VERSION = "jb-v3.0.0";
 const CACHE = `jagobahasa-${VERSION}`;
 
 const ASSETS = [
@@ -39,6 +39,31 @@ const ASSETS = [
   "./js/data/vi.js",
   "./js/data/zh.js",
   "./js/scripts.js",
+  /* Book dictionary — index plus one reference volume per language. */
+  "./js/lexicon.js",
+  "./js/lexicon/ar.js",
+  "./js/lexicon/de.js",
+  "./js/lexicon/el.js",
+  "./js/lexicon/en.js",
+  "./js/lexicon/es.js",
+  "./js/lexicon/fr.js",
+  "./js/lexicon/hi.js",
+  "./js/lexicon/it.js",
+  "./js/lexicon/ja.js",
+  "./js/lexicon/ko.js",
+  "./js/lexicon/ms.js",
+  "./js/lexicon/nl.js",
+  "./js/lexicon/pl.js",
+  "./js/lexicon/pt.js",
+  "./js/lexicon/ru.js",
+  "./js/lexicon/sv.js",
+  "./js/lexicon/sw.js",
+  "./js/lexicon/th.js",
+  "./js/lexicon/tl.js",
+  "./js/lexicon/tr.js",
+  "./js/lexicon/uk.js",
+  "./js/lexicon/vi.js",
+  "./js/lexicon/zh.js",
   "./js/core/dom.js",
   "./js/core/ui.js",
   "./js/core/random.js",
@@ -54,6 +79,7 @@ const ASSETS = [
   "./js/views/partials.js",
   "./js/views/learn.js",
   "./js/views/dictionary.js",
+  "./js/views/path.js",
   "./js/views/practice.js",
   "./js/views/auth.js",
   "./js/chrome.js",

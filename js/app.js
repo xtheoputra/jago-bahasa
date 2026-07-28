@@ -22,7 +22,9 @@ import {
   renderSpeak, renderAudio, renderBuild, renderScript, renderFavorites,
   renderDictation,
 } from "./views/practice.js";
-import { renderDictionary } from "./views/dictionary.js";
+import { renderDictionary, renderBook, renderEntry, renderGuide, resetDictionaryIndex } from "./views/dictionary.js";
+import { renderPathIndex, renderPath, renderDrill } from "./views/path.js";
+import { loadLexicons, loadAllLexicons } from "./lexicon.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
 import { notFound } from "./views/partials.js";
 
@@ -53,14 +55,49 @@ const needsProgress = (render) =>
     // courses instead, so make sure those are available.
     return ids.length ? ids : COURSES.slice(0, 6).map((c) => c.id);
   });
-/** The dictionary is the one view that genuinely needs the whole catalogue. */
-const needsAll = (render) => awaitData(render, () => COURSES.map((c) => c.id));
+/* ------------------------------------------------ lazy dictionary loading
+   The reference volumes (js/lexicon/<id>.js) load the same way the course
+   chunks do. Routes that show a book wait for exactly one of them; the
+   cross-language search waits for all of them, once. */
+function awaitLexicon(render, pick, alsoCourse) {
+  return (view, params, ctx) => {
+    const langs = pick(params);
+    const jobs = [loadLexicons(langs)];
+    // The entry page cross-references the course, so pull that chunk too.
+    if (alsoCourse) jobs.push(loadCourses(langs));
+    view.innerHTML = skeleton(4);
+    Promise.all(jobs)
+      .then(() => {
+        resetDictionaryIndex(); // a new volume invalidates the search index
+        if (!(ctx && ctx.signal && ctx.signal.aborted)) render(view, params, ctx);
+      })
+      .catch(() => render(view, params, ctx));
+  };
+}
+/** Routes shaped #/thing/:lang — one dictionary is enough. */
+const needsBook = (render, alsoCourse = false) =>
+  awaitLexicon(render, ([lang]) => (lang ? [lang] : []), alsoCourse);
+/** The search spans every language, so it needs every course AND every book. */
+const needsEverything = (render) => (view, params, ctx) => {
+  view.innerHTML = skeleton(4);
+  Promise.all([loadCourses(COURSES.map((c) => c.id)), loadAllLexicons()])
+    .then(() => {
+      resetDictionaryIndex();
+      if (!(ctx && ctx.signal && ctx.signal.aborted)) render(view, params, ctx);
+    })
+    .catch(() => render(view, params, ctx));
+};
 
 /* ----------------------------------------------------------------- routes */
 registerRoutes({
   home: { render: renderHome },
   courses: { render: renderCourses },
-  search: { render: needsAll(renderDictionary) },
+  search: { render: needsEverything(renderDictionary) },
+  dict: { render: needsBook(renderBook) },
+  entry: { render: needsBook(renderEntry, true) },
+  guide: { render: needsBook(renderGuide) },
+  path: { render: (view, params, ctx) => (params[0] ? needsBook(renderPath)(view, params, ctx) : renderPathIndex(view, params, ctx)) },
+  drill: { render: needsBook(renderDrill) },
   course: { render: renderCourse },
   lesson: { render: needsCourse(renderLesson) },
   flashcards: { render: needsCourse(renderFlashcards) },

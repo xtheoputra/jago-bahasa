@@ -10,6 +10,11 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 | | |
 |---|---|
 | 🌍 **23 bahasa dunia** | Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai, **Yunani**, **Ukraina**, **Swahili** |
+| 📖 **Kamus buku 23 bahasa** | **1.704 entri** bergaya kamus cetak: lafal (IPA/romanisasi), kelas kata, tingkat CEFR A1–C2, definisi & arti tiga bahasa, contoh kalimat, sinonim/lawan kata, catatan pemakaian, dan tautan silang ke pelajaran |
+| 🔤 **Jelajah A–Z sesuai aksaranya** | Tiap kamus diindeks dengan alfabetnya sendiri: jamo Hangul (가나다순), huruf Kiril & Yunani, huruf dasar Arab, konsonan awal Thai, serta romaji/pinyin untuk Jepang & Mandarin |
+| 📐 **Panduan Bahasa** | Muka buku tiap bahasa: sistem tulisan, kunci pelafalan (138 baris), dan inti tata bahasa (115 butir) — semuanya trilingual |
+| 🧭 **Jalur Nol → Ahli** | Enam tahap CEFR per bahasa: pernyataan "yang bisa kamu lakukan", pelajaran tahap itu, kata kamus tahap itu, dan progres nyata dari data belajarmu |
+| 🎯 **Latihan Kamus** | Kuis 10 soal per tahap CEFR langsung dari entri kamus (definisi → kata), lengkap dengan XP & statistik akurasi |
 | 🃏 **Flashcard interaktif** | Kartu balik dengan animasi 3D + navigasi keyboard |
 | 🗣️ **Dialog percakapan** | Pelajaran "Percakapan" bergaya chat **multi-pembicara (A/B/C/D)** — grup & dialog panjang — dengan TTS & arti tiap baris di semua bahasa |
 | 🧠 **Kuis otomatis** | Pilihan ganda (acak kriptografis) dengan skor, cincin progres, dan XP |
@@ -24,6 +29,7 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 | 🔡 **Pelatih Aksara** | Kuasai hiragana, hangul, kiril (Rusia & Ukraina), abjad Arab, alfabet Yunani, & konsonan Thai |
 | 🌟 **Kata Hari Ini** | Satu kata pilihan per hari dari seluruh katalog — bisa didengarkan, dibintangi, & dibuka pelajarannya |
 | 🔎 **Filter Katalog** | Cari bahasa di halaman Katalog (cocok dengan nama lokal, Inggris, Spanyol, endonim, atau kode) |
+| 🔍 **Pencarian lintas bahasa** | Satu kotak cari menembus **5.267 lema** (3.563 kata pelajaran + 1.704 entri kamus) dengan saringan bahasa, tingkat, dan "hanya yang ada contoh" |
 | 🔁 **Review SRS** | Pengulangan berjarak (SM-2) atas kata yang sudah dipelajari |
 | 🎯 **Target Harian** | Target XP harian yang bisa diatur (Santai/Normal/Serius) + cincin progres |
 | 🎲 **Campur Cepat** | 10 soal acak lintas kata yang sudah dipelajari, satu ketuk |
@@ -91,7 +97,7 @@ Server ini melayani file statis **dan** API auth/sinkronisasi di `/api/*`, jadi 
 ### 🧪 Menjalankan Tes
 
 ```bash
-npm test          # 68 tes, ±4 detik, tanpa satu pun dependency
+npm test          # 102 tes, ±12 detik, tanpa satu pun dependency
 ```
 
 Memakai test runner bawaan Node (`node --test`, butuh Node ≥ 18) — **tidak ada paket yang perlu dipasang**.
@@ -99,6 +105,7 @@ Memakai test runner bawaan Node (`node --test`, butuh Node ≥ 18) — **tidak a
 | Berkas | Yang dijaga |
 |---|---|
 | `tests/content.test.mjs` | Bentuk katalog: metadata lengkap 3 bahasa, ≥4 arti unik per pelajaran (kuis butuh 4 opsi), romanisasi wajib untuk aksara non-Latin, panjang `dialog` = jumlah baris, mode Isian & Pembangun Kalimat benar-benar bisa dimainkan di tiap bahasa |
+| `tests/lexicon.test.mjs` | Kamus buku: tiap kursus punya kamus & sebaliknya, jumlah entri cocok dengan indeks, lema unik, tiap entri lengkap (kelas kata, band CEFR, arti & definisi trilingual), romanisasi wajib untuk 9 aksara non-Latin, tiap lema masuk ke huruf alfabetnya sendiri dan blok hurufnya tidak berselang-seling, tiap band punya ≥4 entri (agar Latihan Kamus bisa dimainkan), muka buku lengkap, dan bintang kamus tidak terhapus oleh `favPool()` |
 | `tests/state.test.mjs` | Progres & gamifikasi: penjadwalan SRS (termasuk regresi zona waktu `parseISO`), target harian, retensi riwayat, ekspor/impor, isolasi progres antar-akun |
 | `tests/i18n.test.mjs` | Paritas kunci id/en/es, tidak ada terjemahan kosong, jumlah `%s` sama, semua kunci yang dipakai kode benar-benar ada |
 | `tests/assets.test.mjs` | Cangkang offline: tiap modul JS ada di daftar precache `sw.js` (dan sebaliknya), manifest & ikon valid, CSP index.html utuh |
@@ -137,9 +144,11 @@ Jago Bahasa/
 │   ├── i18n.js             # Antarmuka 3 bahasa
 │   ├── data.js             # Indeks katalog (metadata + loadCourse/loadAll)
 │   ├── data/<kode>.js      # Kosakata per bahasa, dimuat saat dibutuhkan
+│   ├── lexicon.js          # Indeks kamus buku (band CEFR, alfabet per aksara, loader)
+│   ├── lexicon/<kode>.js   # Entri kamus + panduan bahasa, dimuat saat dibutuhkan
 │   ├── core/               # dom, ui, random (crypto Fisher–Yates), state, router
 │   ├── auth/               # crypto (PBKDF2), db (IndexedDB), local/remote provider, session, validate
-│   ├── views/              # learn, practice, auth, partials
+│   ├── views/              # learn, practice, dictionary (kamus), path (jalur), auth, partials
 │   ├── chrome.js  pwa.js   # Tema/bahasa/menu akun/install · registrasi SW
 └── server/                 # Backend opsional (zero-dependency: node:http + node:crypto)
     ├── index.js  config.js  crypto.js (scrypt)  store.js (atomic JSON)
@@ -180,6 +189,31 @@ export default {
 - **Wajib:** `n` di metadata harus sama dengan jumlah item di berkas kursus, dan berkas baru harus masuk daftar `ASSETS` di `sw.js`. Keduanya dijaga oleh `npm test`.
 
 Kuis & flashcard otomatis menyesuaikan — tidak perlu mengubah kode lain.
+
+---
+
+## 📖 Menambah Entri Kamus
+
+Kamus buku memakai pola yang sama: indeks ringan di `js/lexicon.js` (`n` = jumlah entri)
+dan entrinya di `js/lexicon/<kode>.js`.
+
+```js
+export const guide = { intro: [...], script: [...], pron: [...], grammar: [...] }; // muka buku
+
+export default [
+  { w: "casa", pos: "n", cefr: "A1", gen: "f", ipa: "ˈka.sa",
+    g: ["rumah", "house, home", "casa"],                       // arti pendek (id/en/es)
+    d: ["Bangunan tempat orang tinggal.", "A building where people live.", "Edificio donde vive la gente."],
+    ex: ["Mi casa está cerca del parque.", "Rumah saya dekat taman.", "My house is near the park.", "Mi casa está cerca del parque."],
+    syn: ["hogar"], ant: [], note: ["…", "…", "…"] },
+];
+```
+
+- `w` lema · `r` romanisasi (**wajib** untuk aksara non-Latin) · `pos` kelas kata (`n`, `v`, `adj`… → label di i18n `pos.*`)
+- `cefr` A1–C2 menentukan tahap pada Jalur Nol → Ahli **dan** dek Latihan Kamus (**tiap band butuh ≥4 entri**)
+- `gen` penanda gender/kelas (`m`/`f`/`nt` diterjemahkan; nilai lain — `de`, `het`, `en`, `ett` — ditampilkan apa adanya)
+- Urutan A–Z dihitung sendiri oleh `lexicon.js` memakai alfabet bahasanya (jamo Hangul, Kiril, Arab, Thai, romaji/pinyin) — cukup tulis entrinya, urutannya otomatis.
+- **Wajib:** `n` di indeks sama dengan jumlah entri, dan berkas baru masuk daftar `ASSETS` di `sw.js`. Keduanya dijaga `npm test`.
 
 ### ⚡ Kenapa dipecah?
 

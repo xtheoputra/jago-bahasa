@@ -267,7 +267,9 @@ export function progressCourseIds() {
   const ids = new Set();
   for (const k of Object.keys(state.doneLessons)) ids.add(k.split("/")[0]);
   for (const k of Object.keys(state.mistakes || {})) ids.add(k.split("/")[0]);
-  for (const k of Object.keys(state.favorites || {})) ids.add(k.split("/")[0]);
+  for (const k of Object.keys(state.favorites || {})) {
+    if (!isLexKey(k)) ids.add(k.split("/")[0]);
+  }
   return [...ids];
 }
 export function srsDue(pool) {
@@ -376,7 +378,25 @@ export function counter(name) {
   return (state.counters && state.counters[name]) || 0;
 }
 
-/* ------------------------------------------------------------- favorites */
+/* ------------------------------------------------------------- favorites
+   Two kinds of key share this map:
+     "courseId/lessonId#index"  — a word inside a lesson (resolvable via COURSES)
+     "lex/<lang>/<headword>"    — a dictionary entry (resolvable via js/lexicon)
+   favPool() only resolves the first kind, so it must *skip* the second rather
+   than treat it as a dangling reference and delete the learner's stars. */
+export const isLexKey = (key) => String(key).startsWith("lex/");
+
+/** Starred dictionary entries, as { lang, word } — used by the Kamus view. */
+export function lexFavKeys() {
+  return Object.keys(state.favorites || {})
+    .filter(isLexKey)
+    .map((k) => {
+      const i = k.indexOf("/", 4); // "lex/" + lang + "/" + headword (may contain "/")
+      return { key: k, lang: k.slice(4, i), word: k.slice(i + 1) };
+    })
+    .filter((f) => f.lang && f.word);
+}
+
 export function favToggle(key) {
   state.favorites = state.favorites || {};
   const now = !state.favorites[key];
@@ -397,6 +417,7 @@ export function favPool() {
   const out = [];
   let pruned = false;
   for (const key of Object.keys(state.favorites || {})) {
+    if (isLexKey(key)) continue; // dictionary entry — not a lesson card
     const [path, idx] = key.split("#");
     const [cid, lid] = (path || "").split("/");
     const c = COURSES.find((x) => x.id === cid);

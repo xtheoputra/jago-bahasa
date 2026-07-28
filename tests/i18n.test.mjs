@@ -96,8 +96,9 @@ test("no key is left defined but unused", () => {
     for (const m of txt.matchAll(/"([a-zA-Z0-9._]+)"/g)) referenced.add(m[1]);
     for (const m of txt.matchAll(/data-i18n="([a-zA-Z0-9._]+)"/g)) referenced.add(m[1]);
   }
-  // diff.* is built at runtime as t("diff." + lesson.level).
-  const dynamic = (k) => k.startsWith("diff.");
+  // Built at runtime from data: t("diff." + lesson.level), t("pos." + entry.pos),
+  // t("gen." + entry.gen) — the values themselves are checked by the content tests.
+  const dynamic = (k) => k.startsWith("diff.") || k.startsWith("pos.") || k.startsWith("gen.");
   const dead = Object.keys(I18N.strings.id).filter((k) => !dynamic(k) && !referenced.has(k));
   assert.deepEqual(dead, [], `unused i18n keys (delete them or wire them up): ${dead.join(", ")}`);
 });

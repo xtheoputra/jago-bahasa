@@ -18,7 +18,9 @@ const NAV_MAP = {
   type: "courses", listen: "courses", match: "courses", dictation: "courses",
   speak: "courses", audio: "courses", build: "courses", script: "courses",
   mix: "home", mistakes: "progress", favorites: "progress", stats: "progress",
-  search: "search", review: "progress", progress: "progress", about: "about",
+  search: "search", dict: "search", entry: "search", guide: "search",
+  path: "courses", drill: "courses",
+  review: "progress", progress: "progress", about: "about",
   login: null, register: null, account: null,
 };
 

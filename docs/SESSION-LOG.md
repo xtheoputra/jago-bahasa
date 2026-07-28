@@ -543,3 +543,92 @@ Smoke test headless merender 11 rute tanpa error konsol. SW `jb-v2.13.0` → **`
 ---
 
 *Diperbarui — v2.15 2026-07-23 (katalog dipecah: −84% beban parse saat mulai; +36 pelajaran, +288 kata di 23 bahasa).*
+
+---
+
+## Pembaruan v3.0 — Kamus Buku 23 Bahasa & Jalur Nol → Ahli (2026-07-28)
+
+Permintaan pengguna: *"tambahkan kamus buku yang lengkap untuk setiap bahasa, menjadi taraf
+internasional, perkaya pengalaman, dan menjadi tempat pembelajaran yang interaktif mengajarkan
+dari nol hingga expert"*.
+
+Sebelumnya "Kamus" hanya mesin cari atas kosakata pelajaran. Sekarang ada **lapisan rujukan
+tersendiri**: satu kamus bergaya buku cetak untuk tiap bahasa, plus jalur belajar berjenjang
+yang menghubungkan kamus itu dengan pelajaran yang sudah ada.
+
+### 1. Lapisan data baru — `js/lexicon.js` + `js/lexicon/<kode>.js`
+
+Pola yang sama dengan katalog: indeks ringan selalu dimuat, entrinya dimuat saat kamus dibuka.
+
+| | Isi |
+|---|---|
+| Entri | **1.704** (23 bahasa; Inggris & Korea 96, sisanya 72) |
+| Sebaran band | A1 284 · A2 285 · B1 284 · B2 284 · C1 284 · C2 283 |
+| Kelengkapan | **100%** entri punya contoh kalimat *dan* lafal (IPA atau romanisasi); 309 entri bersinonim/berlawanan; 83 catatan pemakaian |
+| Muka buku | 23 panduan bahasa: 138 baris kunci pelafalan + 115 butir tata bahasa, semuanya trilingual |
+
+Tiap entri membawa lema, lafal, kelas kata, band CEFR, penanda gender/kelas, arti pendek dan
+definisi dalam tiga bahasa UI, contoh kalimat bertranslasi, sinonim/lawan kata, dan catatan
+pemakaian. Catatan itu dipakai untuk hal yang benar-benar menjebak — misalnya "teman palsu"
+Melayu–Indonesia (`pejabat` = kantor, `percuma` = gratis, `budak` = anak), `manquer`/`mancare`
+yang susunannya terbalik, atau `tener/avere` untuk usia dan rasa lapar.
+
+### 2. Indeks A–Z menurut aksara masing-masing
+
+Kamus dijelajahi dengan alfabetnya sendiri, bukan A–Z Latin:
+
+- **Hangul** dikelompokkan menurut jamo awal (가나다순) lewat rumus `(kode − 0xAC00) / 588`
+- **Kiril** (Rusia/Ukraina), **Yunani**, **Devanagari** memakai hurufnya sendiri
+- **Arab** difilekan pada huruf dasarnya (أ إ آ → ا, ة → ه) seperti kamus Arab cetak
+- **Thai** melewati vokal muka (เ แ โ ใ ไ) dan mengindeks pada konsonan — persis aturan kamus Thai
+- **Jepang & Mandarin** diindeks pada romaji/pinyin, seperti indeks rōmaji & 汉语拼音 di kamus cetak
+- Latin: huruf beraksen dilipat ke huruf dasarnya, termasuk yang tak bisa dilipat NFD (Ł→L, Ø→O, ß→S)
+
+Pengurutan memakai `Intl.Collator` bahasa terkait, tetapi **blok huruf diurutkan lebih dulu**
+supaya tiap tab A–Z benar-benar satu blok utuh (collator saja bisa menyelipkan ㄲ di antara ㄱ).
+
+### 3. Empat layar baru
+
+- `#/search` — **rak kamus** 23 volume + pencarian lintas bahasa atas **5.267 lema**
+  (3.563 kata pelajaran + 1.704 entri kamus); lema persis melompat ke atas hasil.
+- `#/dict/:bahasa[/:band]` — **satu volume**: strip A–Z, strip CEFR, cari dalam kamus,
+  saringan ⭐ favorit, dan tombol "halaman acak" (membuka kamus secara acak seperti buku).
+- `#/entry/:bahasa/:lema` — **satu halaman kamus**: lema besar, lafal, kelas kata, band,
+  definisi, contoh ber-TTS, sinonim/lawan kata yang bisa diklik, catatan pemakaian,
+  tautan ke pelajaran yang memuat kata itu, serta navigasi ‹ sebelumnya / berikutnya ›.
+- `#/guide/:bahasa` — **muka buku**: sistem tulisan, tabel kunci pelafalan, inti tata bahasa,
+  dan daftar singkatan (kelas kata + band CEFR).
+
+### 4. Jalur Nol → Ahli (`#/path`, `#/path/:bahasa`) + Latihan Kamus (`#/drill/:bahasa/:band`)
+
+Katalog sudah tahu tingkat tiap pelajaran, kamus sudah menandai band tiap kata — jalur ini
+menyandingkan keduanya. Enam tahap (A1→C2), masing-masing menampilkan pernyataan
+"yang bisa kamu lakukan", pelajaran tahap itu beserta tanda selesai, kata kamus tahap itu,
+dan tombol **Latihan Kamus**: 10 soal definisi → lema dari band tersebut, terhubung ke XP dan
+statistik akurasi (mode baru `drill`).
+
+### 5. Perkara halus yang sengaja ditangani
+
+- **Bintang kamus tidak menghapus dirinya sendiri.** Favorit kamus memakai kunci
+  `lex/<bahasa>/<lema>`, sedangkan `favPool()` memangkas kunci yang tak bisa diurai jadi kartu
+  pelajaran. Kunci `lex/` kini dilewati (bukan dihapus), dan `progressCourseIds()` tidak lagi
+  menganggap `lex` sebagai kode kursus. Dijaga oleh tes tersendiri.
+- **Pemuatan malas** mengikuti pola `data.js`: rute kamus menunggu satu volume, rute pencarian
+  menunggu seluruh katalog + seluruh kamus, dan indeks pencarian dibangun ulang saat volume baru tiba.
+- **Kontras & aksesibilitas**: chip band memakai token warna yang sudah lulus uji kontras
+  (`--success-text`, `--accent-text`, `--brand`), hurufnya tetap tertulis (warna bukan satu-satunya
+  penanda), dan tombol ‹ › diberi `aria-label` bernama lema tujuannya.
+
+### Validasi
+
+`npm test` → **102 tes hijau** (dari 87), termasuk berkas baru `tests/lexicon.test.mjs` (13 tes)
+yang menjaga bentuk kamus, romanisasi 9 aksara non-Latin, keutuhan blok huruf A–Z, syarat
+≥4 entri per band agar Latihan Kamus bisa dimainkan, dan perilaku favorit di atas. Smoke test
+headless Chrome bertambah 2 dan kini merender 15 rute — termasuk rak kamus, satu volume,
+satu halaman entri, muka buku, jalur enam tahap, dan latihan kamus — **tanpa satu pun error konsol**.
+Indeks A–Z diperiksa langsung dari DOM: Hangul ㄱ–ㅎ, Arab ا–ي, Thai ก–อ, pinyin B–Z.
+SW `jb-v2.15.0` → **`jb-v3.0.0`**.
+
+---
+
+*Diperbarui — v3.0 2026-07-28 (kamus buku 23 bahasa: +1.704 entri, +23 panduan bahasa, 4 layar kamus, jalur nol→ahli + latihan kamus, 15 tes baru).*

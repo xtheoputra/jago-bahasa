@@ -12,6 +12,7 @@ import { navigate, rerender } from "../core/router.js";
 import { session } from "../auth/session.js";
 import { I18N } from "../i18n.js";
 import { SCRIPTS } from "../scripts.js";
+import { lexiconSize } from "../lexicon.js";
 import {
   ACCENT_KEYS, getAccent, setAccent, getTextScale, setTextScale, getDyslexia, setDyslexia, requestReminder,
 } from "../chrome.js";
@@ -311,6 +312,17 @@ export function renderCourse(view, [cid]) {
         <div class="progress" aria-hidden="true"><i style="width:${p.pct}%"></i></div>
       </div>
     </div>
+    <a class="card review-cta" href="#/path/${esc(c.id)}" style="margin-bottom:6px">
+      <div class="review-cta__ico" aria-hidden="true">🧭</div>
+      <div class="review-cta__txt"><strong>${esc(t("path.title"))}</strong><span>${esc(t("path.sub"))}</span></div>
+      <span class="btn btn--sm">${esc(t("home.reviewGo"))} →</span>
+    </a>
+    ${lexiconSize(c.id) ? `
+    <a class="card review-cta" href="#/dict/${esc(c.id)}" style="margin-bottom:6px">
+      <div class="review-cta__ico" aria-hidden="true">📖</div>
+      <div class="review-cta__txt"><strong>${esc(t("dict.open"))}</strong><span>${esc(t("dict.entries", lexiconSize(c.id)))} · ${esc(t("guide.title"))}</span></div>
+      <span class="btn btn--sm">${esc(t("home.reviewGo"))} →</span>
+    </a>` : ""}
     ${script ? `
     <a class="card review-cta" href="#/script/${script.id}" style="margin-bottom:6px">
       <div class="review-cta__ico" aria-hidden="true">🔡</div>
@@ -638,7 +650,7 @@ export function renderStats(view) {
     ["quiz", "🧠", "lesson.quiz"], ["type", "⌨️", "lesson.type"], ["listen", "👂", "lesson.listen"],
     ["dictation", "📝", "lesson.dictation"], ["cloze", "✍️", "lesson.cloze"],
     ["speak", "🎤", "lesson.speak"], ["build", "🧩", "lesson.build"], ["mix", "🎲", "mix.title"],
-    ["mistakes", "🧯", "mistakes.title"], ["fav", "⭐", "fav.title"],
+    ["mistakes", "🧯", "mistakes.title"], ["fav", "⭐", "fav.title"], ["drill", "📖", "drill.title"],
   ];
   const accRows = MODES.map(([m, e, k]) => ({ e, k, a: store.accuracy(m) })).filter((r) => r.a);
 

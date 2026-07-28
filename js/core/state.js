@@ -5,6 +5,7 @@
    pluggable `remote` adapter; on login, server progress is merged in.
    ========================================================================= */
 import { COURSES, courseLoaded } from "../data.js";
+import { getLexicon, lexiconLoaded, lexiconMeta, dictLesson, dictItem } from "../lexicon.js";
 
 const KEY_BASE = "jb.progress.v1";
 const nsKey = (uid) => `${KEY_BASE}::${uid || "guest"}`;
@@ -233,6 +234,16 @@ export function addXp(n) {
    Cards are drawn from lessons the user has completed. Scheduling is an
    SM-2-lite: each grade adjusts the interval and ease; a "due" card is one
    whose next-review date has arrived (new cards are due immediately). */
+/** Dictionary headwords that belong in the review rotation: the ones you
+ *  starred, plus the ones a dictionary drill has already introduced (those
+ *  carry an SRS record). Both are pure state, so this needs no chunk. */
+export function dictCardKeys() {
+  const keys = new Set();
+  for (const k of Object.keys(state.favorites || {})) if (isLexKey(k)) keys.add(k);
+  for (const k of Object.keys(state.srs || {})) if (isLexKey(k)) keys.add(k);
+  return [...keys];
+}
+
 export function srsPool() {
   const out = [];
   for (const key of Object.keys(state.doneLessons)) {
@@ -241,6 +252,12 @@ export function srsPool() {
     const l = c && c.lessons.find((x) => x.id === lid);
     if (!c || !l) continue;
     l.items.forEach((it, i) => out.push({ key: `${cid}/${lid}#${i}`, c, l, it }));
+  }
+  // Dictionary words sit in the very same rotation — a word you starred is a
+  // word you want to remember, whichever half of the app you met it in.
+  for (const key of dictCardKeys()) {
+    const card = resolveCard(key);
+    if (card) out.push(card);
   }
   return out;
 }
@@ -258,7 +275,20 @@ export function srsKeys() {
     const n = l.n ?? l.items.length;
     for (let i = 0; i < n; i++) out.push({ key: `${cid}/${lid}#${i}` });
   }
+  for (const key of dictCardKeys()) out.push({ key });
   return out;
+}
+
+/** Which dictionary volumes a progress-driven deck has to download first. */
+export function progressLexiconIds() {
+  const ids = new Set();
+  const add = (k) => {
+    const cut = k.indexOf("/", 4);
+    if (cut > 0) ids.add(k.slice(4, cut));
+  };
+  for (const k of dictCardKeys()) add(k);
+  for (const k of Object.keys(state.mistakes || {})) if (isLexKey(k)) add(k);
+  return [...ids];
 }
 
 /** Every course id this learner has touched — what the review/mistake/favourite
@@ -345,27 +375,56 @@ export function clearMistake(key) {
 export function mistakeCount() {
   return Object.keys(state.mistakes || {}).length;
 }
-/** Resolve mistake keys into live {c,l,it} entries, pruning any that no longer exist.
- *  Entries whose course hasn't been loaded yet are skipped, never pruned — an
- *  unloaded course has no items, which is not the same as a deleted word. */
-export function mistakePool() {
+/** Resolve any card key into the one shape every practice mode understands.
+ *  Two namespaces live side by side:
+ *      "courseId/lessonId#index"  — a word inside a lesson
+ *      "lex/<lang>/<headword>"    — a dictionary headword
+ *  Returns the card; `undefined` while its chunk is still on the way (skip it,
+ *  a chunk in flight is not a deleted word); `null` when it is genuinely gone
+ *  and the key should be pruned. Every deck goes through here, so the two
+ *  namespaces can never drift apart again. */
+export function resolveCard(key) {
+  if (isLexKey(key)) {
+    const cut = key.indexOf("/", 4); // headwords may contain "/" themselves
+    if (cut < 0) return null;
+    const lang = key.slice(4, cut),
+      word = key.slice(cut + 1);
+    if (!lexiconMeta(lang)) return null; // no dictionary for that language
+    if (!lexiconLoaded(lang)) return undefined; // volume not downloaded yet
+    const e = getLexicon(lang).byWord.get(word);
+    const c = COURSES.find((x) => x.id === lang);
+    if (!e || !c) return null;
+    return { key, c, l: dictLesson(e), it: dictItem(e) };
+  }
+  const [path, idx] = key.split("#");
+  const [cid, lid] = (path || "").split("/");
+  const c = COURSES.find((x) => x.id === cid);
+  const l = c && c.lessons.find((x) => x.id === lid);
+  const it = l && l.items[+idx];
+  if (c && l && it) return { key, c, l, it };
+  if (c && !courseLoaded(cid)) return undefined;
+  return null;
+}
+
+/** Walk a key set through resolveCard(), pruning only what is truly gone. */
+function poolFrom(bag) {
   const out = [];
   let pruned = false;
-  for (const key of Object.keys(state.mistakes || {})) {
-    const [path, idx] = key.split("#");
-    const [cid, lid] = (path || "").split("/");
-    const c = COURSES.find((x) => x.id === cid);
-    const l = c && c.lessons.find((x) => x.id === lid);
-    const it = l && l.items[+idx];
-    if (c && l && it) out.push({ key, c, l, it });
-    else if (c && !courseLoaded(cid)) continue;
-    else {
-      delete state.mistakes[key];
+  for (const key of Object.keys(bag || {})) {
+    const card = resolveCard(key);
+    if (card) out.push(card);
+    else if (card === null) {
+      delete bag[key];
       pruned = true;
     }
   }
   if (pruned) persist();
   return out;
+}
+
+/** Resolve mistake keys into live cards, pruning any that no longer exist. */
+export function mistakePool() {
+  return poolFrom(state.mistakes || {});
 }
 
 /* ----------------------------------------------------------- counters */
@@ -408,37 +467,20 @@ export function favToggle(key) {
 export function isFav(key) {
   return !!(state.favorites && state.favorites[key]);
 }
-/** Lesson words only — this is what the Favourites practice deck can play, so
- *  it is also the only number the deck's button may show. Counting dictionary
- *  stars here once produced a "⭐ Favourites · 2" button opening an empty deck. */
+/** Everything starred — the Favourites deck now plays dictionary headwords too,
+ *  so the button's number and the deck's contents finally mean the same thing. */
 export function favCount() {
-  return Object.keys(state.favorites || {}).filter((k) => !isLexKey(k)).length;
+  return Object.keys(state.favorites || {}).length;
 }
 /** Starred dictionary headwords — browsed in the Kamus, not drilled as cards. */
 export function lexFavCount() {
   return Object.keys(state.favorites || {}).filter(isLexKey).length;
 }
-/** Resolve favorite keys into live {key,c,l,it} entries, pruning stale ones.
- *  Same rule as mistakePool(): an unloaded course is skipped, not pruned. */
+/** Every starred word as a playable card — lesson words and dictionary
+ *  headwords alike. Same rule as mistakePool(): a chunk still on the way is
+ *  skipped, never pruned. */
 export function favPool() {
-  const out = [];
-  let pruned = false;
-  for (const key of Object.keys(state.favorites || {})) {
-    if (isLexKey(key)) continue; // dictionary entry — not a lesson card
-    const [path, idx] = key.split("#");
-    const [cid, lid] = (path || "").split("/");
-    const c = COURSES.find((x) => x.id === cid);
-    const l = c && c.lessons.find((x) => x.id === lid);
-    const it = l && l.items[+idx];
-    if (c && l && it) out.push({ key, c, l, it });
-    else if (c && !courseLoaded(cid)) continue;
-    else {
-      delete state.favorites[key];
-      pruned = true;
-    }
-  }
-  if (pruned) persist();
-  return out;
+  return poolFrom(state.favorites || {});
 }
 
 /* ------------------------------------------------- accuracy tally per mode */

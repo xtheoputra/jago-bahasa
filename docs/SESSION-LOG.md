@@ -768,3 +768,67 @@ bukan hiasan. `npm test` → **105 hijau** (dari 102). SW `jb-v3.1.0` → **`jb-
 ---
 
 *Diperbarui — v3.1.1 2026-07-28 (Jodohkan yang mustahil menang & tombol Favorit yang menyesatkan diperbaiki; harness uji interaksi via CDP ditambahkan).*
+
+---
+
+## Pembaruan v3.2 — Kamus Masuk Rotasi SRS (2026-07-28)
+
+Setelah v3.1.1 pengguna meminta analisis: *"apakah ada ide perkembangan untuk aplikasi ini
+lagi… apa yang dapat ditambahkan atau kurang?"* Dari daftar usulan, pengguna memilih **nomor 1**.
+
+### Masalahnya
+
+Kamus 3.359 lema itu **jalan buntu untuk ingatan**. Bintangi seratus lema, kerjakan latihan
+kamus sampai tuntas — besok tak satu pun muncul lagi. Sistem pengulangan berjarak (SRS)
+aplikasi ini hanya mengenal kunci pelajaran (`es/food#3`); kunci kamus (`lex/es/casa`) tak
+punya kartu di baliknya, jadi mesin ulasan mengabaikannya. Akibat sampingannya sudah terlihat
+di v3.1.1: dua penghitung favorit terpaksa dibedakan justru karena dek tak bisa memainkan
+lema kamus.
+
+### Perbaikannya — satu penyelesai kartu untuk dua ruang-nama
+
+Alih-alih menambal tiap pemakai, semua jalur sekarang lewat **`resolveCard(key)`** di
+`js/core/state.js`, dengan tiga jawaban yang bermakna:
+
+| Jawaban | Artinya | Yang dilakukan pemanggil |
+|---|---|---|
+| objek kartu | kunci sah & datanya ada | mainkan |
+| `undefined` | sah, tapi jilid/kursusnya belum diunduh | **lewati, jangan buang** |
+| `null` | tak akan pernah sah | pangkas dari simpanan |
+
+Perbedaan `undefined` vs `null` itulah intinya: tanpa itu, membuka Review sebelum jilid kamus
+termuat akan **menghapus** kartu yang sebenarnya sehat. `js/lexicon.js` menyumbang dua
+penerjemah kecil — `dictLesson(entry)` dan `dictItem(entry)` — yang memberi sebuah lema bentuk
+yang sama persis dengan kata pelajaran (istilah, bacaan, arti, contoh), sehingga seluruh mode
+latihan yang sudah ada langsung bisa memainkannya tanpa perubahan.
+
+### Yang berubah bagi pengguna
+
+- ⭐ **Membintangi lema = menjadwalkannya.** Lema berbintang langsung jadi kartu jatuh tempo di
+  Review Harian, walau pengguna belum pernah menuntaskan satu pelajaran pun.
+- 📖 **Latihan kamus menilai, bukan sekadar menghitung.** Tiap jawaban di `#/drill/:lang/:band`
+  memanggil `srsGrade` — benar → `good`, salah → `again`. Hanya lema yang benar-benar ditanyakan
+  yang masuk rotasi.
+- 🔁 **Favorit satu angka lagi.** `favCount()` kembali menghitung semuanya karena deknya memang
+  sudah bisa memainkan semuanya; rak Kamus menjelaskannya (`dict.favSrs`) plus tombol Review.
+- 📥 **Pemuatan otomatis.** `needsProgress` di `js/app.js` kini menunggu kursus **dan** jilid
+  kamus yang dibutuhkan dek (`progressLexiconIds()`), jadi Review/Favorit/Statistik tak pernah
+  tampil setengah jalan.
+
+### Bukti, bukan klaim
+
+Selain uji baru di `tests/lexicon.test.mjs`, `tests/state.test.mjs`, dan
+`tests/interact.test.mjs`, alurnya dijalankan di Chrome sungguhan: latihan Jepang menjadwalkan
+`lex/ja/見る` → `{"due":"2026-07-29","interval":1,"ease":2.5,"reps":1,"lapses":0}`, Review
+menampilkan kartu kamus (野菜 → "vegetable"; casa), Progres menulis "🔁 Ulasan Harian · 1",
+dan Beranda memunculkan ajakan Review untuk pembelajar yang **hanya** memakai kamus.
+
+Uji asap juga dikeraskan: percobaan ulang `expectRoute` tak lagi berhenti dini saat sebuah
+percobaan mencatat galat konsol — rute yang benar-benar rusak tetap gagal (galatnya berulang di
+tiap percobaan), tapi kegagalan sesaat saat mesin sibuk tak lagi menggoyahkan uji.
+
+`npm test` → **110 hijau** (dari 105). SW `jb-v3.1.1` → **`jb-v3.2.0`**.
+
+---
+
+*Diperbarui — v3.2 2026-07-28 (entri kamus masuk rotasi SRS lewat satu `resolveCard`; bintang & latihan kamus kini menjadwalkan; 5 tes baru, uji asap dikeraskan).*

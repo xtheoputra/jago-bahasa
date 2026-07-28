@@ -162,7 +162,8 @@ function favShelfHTML() {
   if (!favs.length) return "";
   return `
     <div class="section-head" style="margin-top:26px">
-      <div><span class="eyebrow">⭐ ${esc(t("dict.myFav"))}</span><h2 style="font-size:1.2rem">${esc(t("dict.entries", favs.length))}</h2></div>
+      <div><span class="eyebrow">⭐ ${esc(t("dict.myFav"))}</span><h2 style="font-size:1.2rem">${esc(t("dict.entries", favs.length))}</h2><p>${esc(t("dict.favSrs"))}</p></div>
+      <a class="btn btn--ghost btn--sm" href="#/review">🔁 ${esc(t("review.title"))}</a>
     </div>
     <div class="book-list">${favs.map(({ e, c }) => entryRowHTML(e, c)).join("")}</div>`;
 }

@@ -30,7 +30,7 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 | 🌟 **Kata Hari Ini** | Satu kata pilihan per hari dari seluruh katalog — bisa didengarkan, dibintangi, & dibuka pelajarannya |
 | 🔎 **Filter Katalog** | Cari bahasa di halaman Katalog (cocok dengan nama lokal, Inggris, Spanyol, endonim, atau kode) |
 | 🔍 **Pencarian lintas bahasa** | Satu kotak cari menembus **6.922 lema** (3.563 kata pelajaran + 3.359 entri kamus) dengan saringan bahasa, tingkat, dan "hanya yang ada contoh" |
-| 🔁 **Review SRS** | Pengulangan berjarak (SM-2) atas kata yang sudah dipelajari |
+| 🔁 **Review SRS** | Pengulangan berjarak (SM-2) atas kata pelajaran **dan entri kamus** — lema yang kamu bintangi atau yang muncul di Latihan Kamus masuk rotasi yang sama |
 | 🎯 **Target Harian** | Target XP harian yang bisa diatur (Santai/Normal/Serius) + cincin progres |
 | 🎲 **Campur Cepat** | 10 soal acak lintas kata yang sudah dipelajari, satu ketuk |
 | 🧯 **Perbaiki Kesalahan** | Jawaban salah dikumpulkan otomatis jadi dek latihan terfokus |
@@ -97,7 +97,7 @@ Server ini melayani file statis **dan** API auth/sinkronisasi di `/api/*`, jadi 
 ### 🧪 Menjalankan Tes
 
 ```bash
-npm test          # 105 tes, ±28 detik, tanpa satu pun dependency
+npm test          # 110 tes, ±39 detik, tanpa satu pun dependency
 ```
 
 Memakai test runner bawaan Node (`node --test`, butuh Node ≥ 18) — **tidak ada paket yang perlu dipasang**.

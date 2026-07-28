@@ -205,6 +205,10 @@ export function renderDrill(view, [lang, band], ctx) {
         });
         liveStatus(`${correct ? t("mode.correct") : t("mode.wrong")} — ${q.e.w}`);
         store.recordAttempt("drill", correct);
+        // A drilled headword joins the spaced-repetition rotation, graded by
+        // how it actually went — the same on-ramp finishing a lesson gives its
+        // words. Only the entries you really saw are scheduled.
+        store.srsGrade(q.e.key, correct ? "good" : "again");
         if (correct) score++;
         speak(q.e.w, c.speech);
         advTimer = setTimeout(() => {

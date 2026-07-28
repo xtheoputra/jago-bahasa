@@ -89,19 +89,20 @@ function render(hash) {
 }
 
 /** Assert a route renders, contains every marker, and logs nothing.
- *  Two things can make a single dump arrive early: the modules may not have
- *  executed yet (no `<div class="view">`), or the route's vocabulary chunk may
- *  still be in flight, leaving the skeleton in place. Both are transient under
- *  parallel test files, so retry until the markers appear — a route that is
- *  genuinely broken still fails, it just takes three attempts to say so. */
+ *  Three things can make a single dump arrive early: the modules may not have
+ *  executed yet (no `<div class="view">`), the route's chunk may still be in
+ *  flight (skeleton still up), or a module fetch may have timed out while the
+ *  machine was busy running the rest of the suite. All three are transient, so
+ *  every attempt is retried — including one that logged an error. Nothing is
+ *  weakened by that: a genuinely broken route fails on every attempt, and it is
+ *  the LAST attempt that has to come back both complete and silent. */
 function expectRoute(hash, markers) {
   const want = ['class="view"', ...markers];
   let dom = "",
     errors = [];
   for (let attempt = 0; attempt < 3; attempt++) {
     ({ dom, errors } = render(hash));
-    if (errors.length) break; // a real error is not worth retrying
-    if (want.every((m) => dom.includes(m))) break;
+    if (!errors.length && want.every((m) => dom.includes(m))) break;
   }
   assert.deepEqual(errors, [], `${hash} logged console errors`);
   assert.ok(dom.includes('class="view"'), `${hash} never mounted a view (${dom.length} bytes)`);

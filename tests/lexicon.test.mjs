@@ -18,7 +18,7 @@ globalThis.localStorage = {
   removeItem: (k) => mem.delete(k),
 };
 
-import { COURSES } from "../js/data.js";
+import { COURSES, loadCourse } from "../js/data.js";
 import {
   BANDS, BAND_INFO, BAND_LEVEL, LEXICONS, POS, alphabetOf, getLexicon, findEntry, loadAllLexicons,
 } from "../js/lexicon.js";
@@ -192,32 +192,59 @@ test("cross-references point at headwords that exist (or are plain text)", () =>
   }
 });
 
-test("dictionary favourites survive alongside lesson favourites", () => {
-  // favPool() prunes keys it cannot resolve to a lesson word. A dictionary key
-  // is not resolvable that way — it must be skipped, not deleted, or starring a
-  // headword would silently erase itself on the next Favourites visit.
+test("a starred headword becomes a playable card, not an orphaned key", () => {
   store.reset();
-  const e = getLexicon("es").entries[0];
+  const e = getLexicon("es").entries.find((x) => x.ex);
   store.favToggle(e.key);
   assert.ok(store.isFav(e.key));
-  assert.deepEqual(store.favPool(), [], "a dictionary star is not a lesson card");
-  assert.ok(store.isFav(e.key), "favPool() must not prune dictionary keys");
-  assert.deepEqual(store.lexFavKeys().map((f) => f.word), [e.w]);
+
+  const [card] = store.favPool();
+  assert.ok(card, "starring a headword must produce a card the decks can play");
+  assert.equal(card.key, e.key);
+  assert.equal(card.it.term, e.w, "the card shows the headword");
+  assert.equal(card.it.m.id, e.g.id, "…and its meaning, in the lesson-word shape");
+  assert.equal(card.c.id, "es", "…carrying the course, so TTS knows the language");
+  assert.ok(card.l, "…and a lesson stand-in, so nothing reading .l explodes");
+  assert.ok(store.isFav(e.key), "resolving must never prune a live key");
   assert.ok(!store.progressCourseIds().includes("lex"), '"lex" is not a course id');
-  store.favToggle(e.key);
-  assert.equal(store.lexFavCount(), 0);
+  store.reset();
 });
 
-test("the two favourite counters never borrow from each other", () => {
-  // favCount() drives the Favourites *deck* button, and that deck can only play
-  // lesson words. Counting dictionary stars there produced a button promising
-  // two cards and a page saying there were none.
+test("the favourite counters agree with what the deck actually plays", async () => {
   store.reset();
+  await loadCourse("es"); // both halves must be in memory for the deck to be whole
   const e = getLexicon("es").entries[0];
   store.favToggle(e.key);
   store.favToggle("es/greet#0");
-  assert.equal(store.favCount(), 1, "favCount() must ignore dictionary stars");
-  assert.equal(store.lexFavCount(), 1, "lexFavCount() must ignore lesson stars");
-  assert.equal(store.favCount() + store.lexFavCount(), Object.keys(store.getState().favorites).length);
+  assert.equal(store.favCount(), 2, "favCount() counts everything the deck can play");
+  assert.equal(store.lexFavCount(), 1, "lexFavCount() counts only the dictionary half");
+  assert.equal(store.favPool().length, store.favCount(), "the button's number must equal the deck's size");
+  store.reset();
+});
+
+test("starred and drilled headwords enter the spaced-repetition rotation", () => {
+  // This is the whole point of the dictionary being a study layer rather than
+  // a reference shelf: a word you starred is a word you want to remember.
+  store.reset();
+  const e = getLexicon("es").entries[0];
+  const other = getLexicon("fr").entries[0];
+
+  store.favToggle(e.key); // starred
+  store.srsGrade(other.key, "good"); // met in a dictionary drill
+
+  const keys = store.dictCardKeys();
+  assert.deepEqual(keys.sort(), [e.key, other.key].sort());
+  assert.deepEqual(store.progressLexiconIds().sort(), ["es", "fr"]);
+
+  const pool = store.srsPool();
+  assert.equal(pool.length, 2, "both headwords must be in the review pool");
+  assert.ok(pool.every((p) => p.it.term && p.it.m), "every card must be renderable");
+
+  // A brand-new star is due immediately; a drilled word is scheduled ahead.
+  const due = store.srsDue(pool).map((p) => p.key);
+  assert.deepEqual(due, [e.key], "the drilled word is already scheduled for later");
+
+  // The badge must be able to count them without downloading anything.
+  assert.ok(store.srsKeys().some((k) => k.key === e.key), "srsKeys() must see dictionary cards");
   store.reset();
 });

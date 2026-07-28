@@ -158,7 +158,7 @@ test("Match can actually be won — every pair matched ends the game", opts, asy
   assert.ok(await evalJS(`!!document.querySelector('.quiz-result')`), "matching every pair never reached the win screen");
 });
 
-test("a starred headword is reachable again and never inflates the lesson deck", opts, async () => {
+test("starring a headword puts it in the review rotation, not in limbo", opts, async () => {
   exceptions = [];
   await evalJS(`localStorage.removeItem('jb.progress.v1::guest')`);
   await send("Page.navigate", { url: BASE + "/#/entry/es/casa" });
@@ -166,16 +166,41 @@ test("a starred headword is reachable again and never inflates the lesson deck",
   await evalJS(`document.querySelector('[data-fav]').click()`);
   await sleep(300);
 
-  // The Favourites deck can only play lesson words, so its button must not
-  // appear for a learner whose only stars are dictionary entries.
-  await go("#/progress");
-  assert.equal(await evalJS(`!!document.querySelector('a[href="#/favorites"]')`), false,
-    "the Favourites deck button appeared although only dictionary entries are starred");
-  assert.ok(await evalJS(`!!document.querySelector('a[href="#/search"]')`),
-    "no way back to the starred dictionary entries");
-
-  // …and the star itself must still be findable in the Kamus.
-  await go("#/search", 2600);
+  // The star has to be findable again in the Kamus…
+  await go("#/search", 2800);
   assert.ok(await evalJS(`document.body.textContent.includes('casa')`), "starred headword is not listed on the shelf");
+
+  // …countable on Progress, with a deck behind the number…
+  await go("#/progress");
+  assert.ok(await evalJS(`!!document.querySelector('a[href="#/favorites"]')`), "no Favourites deck for a starred headword");
+  await go("#/favorites", 2600);
+  assert.ok(await evalJS(`document.body.textContent.includes('casa')`), "the Favourites deck cannot play the starred headword");
+
+  // …and, the point of the whole feature, it must be a due review card even
+  // though the learner has never finished a single lesson.
+  await go("#/review", 2800);
+  assert.ok(await evalJS(`!!document.querySelector('.review-card')`), "starred headword never reached Daily Review");
+  assert.ok(await evalJS(`document.querySelector('.review-term')?.textContent.includes('casa')`),
+    "the review card is not showing the starred headword");
   assert.deepEqual(exceptions, [], `starring flow threw: ${exceptions.join(" | ")}`);
+});
+
+test("a dictionary drill schedules the words it actually asked about", opts, async () => {
+  exceptions = [];
+  await evalJS(`localStorage.removeItem('jb.progress.v1::guest')`);
+  await send("Page.navigate", { url: BASE + "/#/drill/ja/A1" });
+  await sleep(2800);
+  for (let i = 0; i < 3; i++) {
+    await evalJS(`document.querySelector('.quiz-opt:not([disabled])')?.click()`);
+    await sleep(1400);
+  }
+  const scheduled = await evalJS(`(() => {
+    const srs = JSON.parse(localStorage.getItem('jb.progress.v1::guest') || '{}').srs || {};
+    const keys = Object.keys(srs).filter(k => k.startsWith('lex/ja/'));
+    return JSON.stringify({ n: keys.length, sample: srs[keys[0]] || null });
+  })()`);
+  const { n, sample } = JSON.parse(scheduled);
+  assert.ok(n >= 2, `a drilled band left only ${n} cards in the rotation`);
+  assert.ok(sample && sample.due, "a scheduled card must carry a due date");
+  assert.deepEqual(exceptions, [], `the drill threw: ${exceptions.join(" | ")}`);
 });

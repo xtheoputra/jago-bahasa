@@ -191,6 +191,36 @@ test("switching users isolates progress", () => {
   store.switchUser("guest");
 });
 
+/* This file never loads a dictionary volume, which makes it the right place to
+   pin down what the decks must do while a chunk is still on its way. */
+test("a dictionary card is skipped, never pruned, while its volume is unloaded", () => {
+  store.reset();
+  const key = "lex/es/casa";
+  store.favToggle(key);
+  assert.deepEqual(store.favPool(), [], "an unloaded volume yields no card…");
+  assert.ok(store.isFav(key), "…but the star must survive to be resolved later");
+  assert.equal(store.resolveCard(key), undefined, "unloaded resolves to 'skip', not 'delete'");
+  store.reset();
+});
+
+test("a dictionary key that can never resolve is pruned", () => {
+  store.reset();
+  store.favToggle("lex/zz/nonsense"); // no such dictionary
+  assert.equal(store.resolveCard("lex/zz/nonsense"), null);
+  assert.deepEqual(store.favPool(), []);
+  assert.equal(store.isFav("lex/zz/nonsense"), false, "a key with no possible home is dropped");
+  store.reset();
+});
+
+test("the review badge counts dictionary cards without downloading them", () => {
+  store.reset();
+  store.favToggle("lex/es/casa");
+  const keys = store.srsKeys().map((k) => k.key);
+  assert.ok(keys.includes("lex/es/casa"), "srsKeys() works off state alone");
+  assert.deepEqual(store.progressLexiconIds(), ["es"], "…and says which volume to fetch");
+  store.reset();
+});
+
 test("levels follow the 200-XP ladder", () => {
   assert.equal(store.levelFromXp(0), 1);
   assert.equal(store.levelFromXp(199), 1);

@@ -24,7 +24,7 @@ import {
 } from "./views/practice.js";
 import { renderDictionary, renderBook, renderEntry, renderGuide, resetDictionaryIndex } from "./views/dictionary.js";
 import { renderPathIndex, renderPath, renderDrill } from "./views/path.js";
-import { loadLexicons, loadAllLexicons } from "./lexicon.js";
+import { loadLexicons, loadAllLexicons, lexiconLoaded } from "./lexicon.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
 import { notFound } from "./views/partials.js";
 
@@ -47,14 +47,24 @@ function awaitData(render, pick) {
 }
 /** Routes shaped #/thing/:courseId/:lessonId — one course is enough. */
 const needsCourse = (render) => awaitData(render, ([cid]) => (cid ? [cid] : []));
-/** Decks drawn from progress (review, mistakes, favourites, quick mix). */
-const needsProgress = (render) =>
-  awaitData(render, () => {
-    const ids = store.progressCourseIds();
-    // A brand-new learner has no progress; Quick Mix seeds from the first few
-    // courses instead, so make sure those are available.
-    return ids.length ? ids : COURSES.slice(0, 6).map((c) => c.id);
-  });
+/** Decks drawn from progress (review, mistakes, favourites, quick mix).
+ *  These decks mix lesson words with dictionary headwords, so both kinds of
+ *  chunk have to land before the deck can resolve itself. */
+const needsProgress = (render) => (view, params, ctx) => {
+  const courseIds = store.progressCourseIds();
+  // A brand-new learner has no progress; Quick Mix seeds from the first few
+  // courses instead, so make sure those are available.
+  const courses = courseIds.length ? courseIds : COURSES.slice(0, 6).map((c) => c.id);
+  const lexicons = store.progressLexiconIds();
+  if (courses.every(courseLoaded) && lexicons.every(lexiconLoaded)) return render(view, params, ctx);
+  view.innerHTML = skeleton(4);
+  Promise.all([loadCourses(courses), loadLexicons(lexicons)])
+    .then(() => {
+      resetDictionaryIndex();
+      if (!(ctx && ctx.signal && ctx.signal.aborted)) render(view, params, ctx);
+    })
+    .catch(() => render(view, params, ctx));
+};
 /* ------------------------------------------------ lazy dictionary loading
    The reference volumes (js/lexicon/<id>.js) load the same way the course
    chunks do. Routes that show a book wait for exactly one of them; the

@@ -279,6 +279,23 @@ export function loadLexicons(langs) {
 /** Load every dictionary — only the cross-language search needs this. */
 export const loadAllLexicons = () => loadLexicons(LEXICONS.map((l) => l.id));
 
+/* ------------------------------------------------- entries as study cards
+   The practice modes all speak one shape: { key, c, l, it }. A dictionary
+   entry becomes that shape here, so Review, Quick Mix and Fix-Mistakes can
+   drill a headword without knowing the dictionary exists. */
+
+/** Where a dictionary card says it came from — a lesson-shaped stand-in. */
+const DICT_LESSON = { id: "lex", icon: "📖", title: { id: "Kamus", en: "Dictionary", es: "Diccionario" }, items: [] };
+export const dictLesson = (entry) => ({ ...DICT_LESSON, level: BAND_LEVEL[entry.cefr] });
+
+/** The vocabulary-item view of an entry: same fields a lesson word carries. */
+export const dictItem = (entry) => ({
+  term: entry.w,
+  reading: entry.r || undefined,
+  m: entry.g,
+  ex: entry.ex || undefined,
+});
+
 /** Look up one headword (exact match) in an already loaded dictionary. */
 export function findEntry(lang, word) {
   const book = books.get(lang);

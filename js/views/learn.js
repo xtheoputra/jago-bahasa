@@ -443,7 +443,8 @@ export function renderProgress(view) {
   const srsDue = srsPool.length ? store.srsDue(srsPool).length : 0;
   const daily = store.dailyStatus();
   const mistakes = store.mistakeCount();
-  const favs = store.favCount();
+  const favs = store.favCount(); // lesson words — what the Favourites deck plays
+  const lexFavs = store.lexFavCount(); // dictionary headwords — browsed in the Kamus
   const rem = store.getReminder();
   const unlocked = ACHIEVEMENTS.filter((a) => a.test()).length;
 
@@ -486,6 +487,7 @@ export function renderProgress(view) {
         <a class="btn btn--sm btn--accent" href="#/mix" aria-label="${esc(t("mix.sub"))}">${esc(t("mix.go"))}</a>
         ${mistakes ? `<a class="btn btn--sm" href="#/mistakes" aria-label="${esc(t("mistakes.count", mistakes))}">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
         ${favs ? `<a class="btn btn--sm" href="#/favorites">⭐ ${esc(t("fav.title"))} · ${favs}</a>` : ""}
+        ${lexFavs ? `<a class="btn btn--sm btn--ghost" href="#/search">📖 ${esc(t("dict.myFav"))} · ${lexFavs}</a>` : ""}
       </div>
     </div>
 

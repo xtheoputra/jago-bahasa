@@ -205,5 +205,19 @@ test("dictionary favourites survive alongside lesson favourites", () => {
   assert.deepEqual(store.lexFavKeys().map((f) => f.word), [e.w]);
   assert.ok(!store.progressCourseIds().includes("lex"), '"lex" is not a course id');
   store.favToggle(e.key);
-  assert.equal(store.favCount(), 0);
+  assert.equal(store.lexFavCount(), 0);
+});
+
+test("the two favourite counters never borrow from each other", () => {
+  // favCount() drives the Favourites *deck* button, and that deck can only play
+  // lesson words. Counting dictionary stars there produced a button promising
+  // two cards and a page saying there were none.
+  store.reset();
+  const e = getLexicon("es").entries[0];
+  store.favToggle(e.key);
+  store.favToggle("es/greet#0");
+  assert.equal(store.favCount(), 1, "favCount() must ignore dictionary stars");
+  assert.equal(store.lexFavCount(), 1, "lexFavCount() must ignore lesson stars");
+  assert.equal(store.favCount() + store.lexFavCount(), Object.keys(store.getState().favorites).length);
+  store.reset();
 });

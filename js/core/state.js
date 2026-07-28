@@ -408,8 +408,15 @@ export function favToggle(key) {
 export function isFav(key) {
   return !!(state.favorites && state.favorites[key]);
 }
+/** Lesson words only — this is what the Favourites practice deck can play, so
+ *  it is also the only number the deck's button may show. Counting dictionary
+ *  stars here once produced a "⭐ Favourites · 2" button opening an empty deck. */
 export function favCount() {
-  return Object.keys(state.favorites || {}).length;
+  return Object.keys(state.favorites || {}).filter((k) => !isLexKey(k)).length;
+}
+/** Starred dictionary headwords — browsed in the Kamus, not drilled as cards. */
+export function lexFavCount() {
+  return Object.keys(state.favorites || {}).filter(isLexKey).length;
 }
 /** Resolve favorite keys into live {key,c,l,it} entries, pruning stale ones.
  *  Same rule as mistakePool(): an unloaded course is skipped, not pruned. */

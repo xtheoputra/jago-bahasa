@@ -151,6 +151,22 @@ function bookResultHTML(rec) {
     </div>`;
 }
 
+/** Starred headwords, across every language. Without this the stars would be
+ *  orphaned: the Favourites deck only drills lesson words, so a dictionary
+ *  star had nowhere to be found again. */
+function favShelfHTML() {
+  const favs = store
+    .lexFavKeys()
+    .map((f) => ({ e: findEntry(f.lang, f.word), c: findCourse(f.lang) }))
+    .filter((x) => x.e && x.c);
+  if (!favs.length) return "";
+  return `
+    <div class="section-head" style="margin-top:26px">
+      <div><span class="eyebrow">⭐ ${esc(t("dict.myFav"))}</span><h2 style="font-size:1.2rem">${esc(t("dict.entries", favs.length))}</h2></div>
+    </div>
+    <div class="book-list">${favs.map(({ e, c }) => entryRowHTML(e, c)).join("")}</div>`;
+}
+
 function shelfHTML() {
   const cards = LEXICONS.map((lx) => {
     const c = findCourse(lx.id);
@@ -194,7 +210,7 @@ export function renderDictionary(view) {
     </div>
     <p class="dict-count" id="dictCount" aria-live="polite"></p>
     <div class="dict-results" id="dictResults"></div>
-    <div id="dictShelf">${shelfHTML()}</div>
+    <div id="dictShelf">${favShelfHTML()}${shelfHTML()}</div>
   `;
 
   const qEl = $("#dictQ", view);
@@ -270,6 +286,7 @@ export function renderDictionary(view) {
   });
 
   wireSpeakButtons(view);
+  wireFav(shelf); // the starred-entries block carries its own ⭐ buttons
   run();
   qEl.focus();
 }

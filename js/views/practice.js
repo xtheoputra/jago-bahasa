@@ -879,7 +879,7 @@ export function renderMatch(view, [cid, lid], ctx) {
     <div class="section-head"><div><span class="eyebrow">🔗 ${esc(t("match.title"))}</span><p style="margin:0">${esc(t("match.prompt"))}</p></div>
       <span class="chip" id="mTime">${esc(t("match.time"))} 0.0s</span></div>
     <div class="match-grid">
-      <div class="match-col">${left.map((x) => `<button class="match-cell ${c.cjk ? "cjk" : ""}" data-side="l" data-id="${x.id}" dir="${c.rtl ? "rtl" : "ltr"}">${esc(x.it.term)}</button>`).join("")}</div>
+      <div class="match-col">${left.map((x) => `<button class="match-cell ${c.cjk ? "cjk" : ""}" data-side="l" data-id="${x.id}" data-term="${esc(x.it.term)}" dir="${c.rtl ? "rtl" : "ltr"}">${esc(x.it.term)}</button>`).join("")}</div>
       <div class="match-col">${right.map((x) => `<button class="match-cell" data-side="r" data-id="${x.id}">${esc(mean(x.it.m))}</button>`).join("")}</div>
     </div>`;
 
@@ -915,6 +915,12 @@ export function renderMatch(view, [cid, lid], ctx) {
     selected = null;
   }
 
+  /** The term to pronounce, read straight off the button that was tapped.
+   *  Deriving it from `picks[id]` instead cost us the whole game once: `picks`
+   *  holds raw items, so `picks[id].it` was undefined and the TypeError fired
+   *  between `matched++` and the win check — every pair matched, nobody won. */
+  const termOf = (cell) => cell.dataset.term || "";
+
   $$(".match-cell", view).forEach((cell) => {
     cell.onclick = () => {
       if (cell.classList.contains("done")) return;
@@ -923,7 +929,7 @@ export function renderMatch(view, [cid, lid], ctx) {
       if (!selected) {
         selected = { side, id, el: cell };
         cell.classList.add("sel");
-        if (side === "l") speak(picks[id].it.term, c.speech);
+        if (side === "l") speak(termOf(cell), c.speech);
         return;
       }
       if (selected.el === cell) return clearSel();
@@ -932,7 +938,7 @@ export function renderMatch(view, [cid, lid], ctx) {
         clearSel();
         selected = { side, id, el: cell };
         cell.classList.add("sel");
-        if (side === "l") speak(picks[id].it.term, c.speech);
+        if (side === "l") speak(termOf(cell), c.speech);
         return;
       }
       // opposite columns — check the pair
@@ -943,11 +949,13 @@ export function renderMatch(view, [cid, lid], ctx) {
           el.classList.add("done");
           el.disabled = true;
         }
+        const term = termOf(selected.side === "l" ? selected.el : cell);
         selected = null;
         matched++;
-        speak(picks[id].it.term, c.speech);
         liveStatus(`${t("mode.correct")} — ${matched}/${picks.length}`);
         if (matched === picks.length) win();
+        // TTS is best-effort and must never sit between the counter and the win.
+        speak(term, c.speech);
       } else {
         const a = selected.el;
         a.classList.add("bad");

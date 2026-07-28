@@ -702,3 +702,69 @@ SW `jb-v3.0.0` → **`jb-v3.1.0`**.
 ---
 
 *Diperbarui — v3.1 2026-07-28 (kamus digandakan: 1.704 → 3.359 entri; entri pendek diperkenalkan; perbaikan indeks Ł/Ø/Æ/Đ/ß dan huruf Thai ฝ).*
+
+---
+
+## Pembaruan v3.1.1 — Dua Bug Nyata Ditemukan & Diperbaiki (2026-07-28)
+
+Permintaan pengguna: *"perbaiki bug jika ada"*. Uji yang ada semuanya hijau, jadi bug apa pun
+yang tersisa pasti berada di celah yang tak tersentuh uji: **interaksi**. Uji render hanya
+membuktikan sebuah rute *muncul*, bukan bahwa tombolnya bekerja.
+
+Karena itu dibuat harness baru: **Chrome sungguhan yang dikendalikan lewat DevTools Protocol**,
+memakai `WebSocket` bawaan Node 22 — tetap nol dependency, sesuai aturan proyek ini. Harness itu
+mengklik antarmuka dan menangkap setiap exception. Hasilnya dua bug nyata.
+
+### Bug A — mode Jodohkan mustahil dimenangkan (bug lama, bukan dari v3.0)
+
+`renderMatch` menyusun kartu dari `picks` yang berisi **item mentah** (`{term, m…}`), tetapi
+penangan kliknya membaca `picks[id].it.term`. `picks[id].it` selalu `undefined`, jadi tiap
+ketukan melempar `TypeError`. Yang fatal bukan TTS-nya yang bisu, melainkan **letak** lemparannya:
+
+```js
+matched++;
+speak(picks[id].it.term, c.speech);   // ← melempar di sini
+liveStatus(…);                        // tak pernah jalan
+if (matched === picks.length) win();  // tak pernah jalan
+```
+
+Semua pasangan bisa dicocokkan dan menghilang dari layar, tetapi layar kemenangan, confetti,
+`srsReviewed()`, dan penghitung pencapaian **tidak pernah** terpanggil. Satu mode latihan penuh
+rusak diam-diam, tanpa satu pun uji yang mengeluh.
+
+Perbaikannya dibuat **kebal secara struktural**, bukan sekadar mengganti satu titik: kata yang
+diucapkan kini dibaca dari `data-term` pada tombol yang diketuk, sehingga tidak ada lagi asumsi
+tentang bentuk objek di balik indeks. TTS juga dipindah ke *setelah* pemeriksaan menang —
+suara adalah usaha terbaik dan tidak boleh berdiri di antara penghitung dan kemenangan.
+
+### Bug B — bintang kamus menggelembungkan tombol dek Favorit (dari v3.0)
+
+`favCount()` menghitung **semua** kunci favorit, termasuk kunci kamus `lex/…`, padahal
+`favPool()` — yang mengisi dek latihan Favorit — sengaja melewatinya. Akibatnya: bintangi dua
+entri kamus, halaman Progres memamerkan **"⭐ Favorit · 2"**, diklik → *"Belum ada kata favorit."*
+Jalan buntu yang membingungkan, dan bintangnya sendiri jadi yatim: tak ada satu pun tempat
+untuk menemukannya kembali selain menyaring per bahasa.
+
+Diperbaiki di tiga sisi:
+- `favCount()` kini hanya menghitung kata pelajaran (yang memang bisa dimainkan dek itu);
+- `lexFavCount()` baru menghitung entri kamus, ditampilkan sebagai chip terpisah **📖 Favorit Kamus · n**;
+- rak kamus (`#/search`) kini membuka dengan blok **⭐ Favorit Kamus** berisi semua lema berbintang
+  lintas bahasa — jadi bintangnya selalu bisa ditemukan lagi.
+
+### Yang diperiksa dan ternyata **sehat**
+
+Sepuluh mode latihan lain diklik satu per satu (Flashcard, Kuis, Ketik, Simak, Dikte, Isian,
+Pembangun Kalimat, Ucap, Audio, Pelatih Aksara), ditambah Review/Campur/Perbaiki Kesalahan,
+Progres, Statistik, filter katalog, ketiga bahasa antarmuka, dan seluruh layar kamus baru —
+**tanpa satu pun exception**. Kuis terbukti bisa diselesaikan sampai layar skor.
+
+### Uji regresi
+
+`tests/interact.test.mjs` masuk repo (dilewati otomatis bila Chrome tak ada atau Node < 21),
+ditambah satu uji unit untuk kedua penghitung favorit. Ketiganya **dibuktikan gagal** ketika
+bug-nya sengaja dikembalikan, lalu hijau lagi setelah perbaikan — jadi ini benar-benar penjaga,
+bukan hiasan. `npm test` → **105 hijau** (dari 102). SW `jb-v3.1.0` → **`jb-v3.1.1`**.
+
+---
+
+*Diperbarui — v3.1.1 2026-07-28 (Jodohkan yang mustahil menang & tombol Favorit yang menyesatkan diperbaiki; harness uji interaksi via CDP ditambahkan).*

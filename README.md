@@ -97,7 +97,7 @@ Server ini melayani file statis **dan** API auth/sinkronisasi di `/api/*`, jadi 
 ### 🧪 Menjalankan Tes
 
 ```bash
-npm test          # 102 tes, ±12 detik, tanpa satu pun dependency
+npm test          # 105 tes, ±28 detik, tanpa satu pun dependency
 ```
 
 Memakai test runner bawaan Node (`node --test`, butuh Node ≥ 18) — **tidak ada paket yang perlu dipasang**.
@@ -111,6 +111,7 @@ Memakai test runner bawaan Node (`node --test`, butuh Node ≥ 18) — **tidak a
 | `tests/assets.test.mjs` | Cangkang offline: tiap modul JS ada di daftar precache `sw.js` (dan sebaliknya), manifest & ikon valid, CSP index.html utuh |
 | `tests/server.test.mjs` | Backend sungguhan di port acak + `DATA_DIR` sementara: MIME, header keamanan, blokir `server/`/dotfile/path-traversal, alur daftar→masuk→sinkron→keluar, CSRF, batas laju, sandi tak pernah tersimpan polos |
 | `tests/smoke.test.mjs` | Render nyata di headless Chrome untuk 10+ rute — **console harus bersih**. Dilewati otomatis bila Chrome tidak ada (`CHROME_PATH` untuk menunjuk biner tertentu) |
+| `tests/interact.test.mjs` | **Mengklik** aplikasinya, bukan cuma merendernya: menyetir Chrome lewat DevTools Protocol (WebSocket bawaan Node, nol dependency) — Jodohkan harus benar-benar bisa dimenangkan, dan bintang kamus tidak boleh menggelembungkan tombol dek Favorit. Setiap exception yang tak tertangkap = gagal. Dilewati bila Chrome tidak ada atau Node < 21 |
 
 > `js/package.json` hanya berisi `{"type":"module"}` supaya Node bisa meng-`import` modul ES di `js/`
 > langsung saat pengujian (peramban mengabaikannya). Root tetap `commonjs` untuk server.

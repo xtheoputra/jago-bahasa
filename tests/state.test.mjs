@@ -221,6 +221,64 @@ test("the review badge counts dictionary cards without downloading them", () => 
   store.reset();
 });
 
+/* ------------------------------------------------------------ stage exams */
+test("a stage is certified only at the pass mark, and never uncertified after", () => {
+  store.reset();
+  const fail = store.recordExam("es", "A1", 73);
+  assert.equal(fail.passed, false);
+  assert.equal(store.examPassed("es", "A1"), false, "73% must not certify anything");
+
+  const pass = store.recordExam("es", "A1", 87);
+  assert.equal(pass.passed, true);
+  assert.equal(pass.first, true, "the first pass has to announce itself");
+  assert.equal(store.examPassed("es", "A1"), true);
+
+  // A shaky re-sit is a worse score, not a lost certificate.
+  store.recordExam("es", "A1", 40);
+  assert.equal(store.examPassed("es", "A1"), true, "a bad re-sit revoked the certificate");
+  assert.equal(store.examResult("es", "A1").best, 87, "the best score must survive a bad re-sit");
+  assert.equal(store.examResult("es", "A1").tries, 3);
+  store.reset();
+});
+
+test("the big XP award is paid once, no matter how often you re-sit", () => {
+  store.reset();
+  const first = store.recordExam("es", "A1", 100);
+  const xpAfterFirst = store.getState().xp;
+  assert.ok(first.gain >= 50, "earning a stage should be worth real XP");
+  const again = store.recordExam("es", "A1", 100);
+  assert.ok(again.gain < first.gain, "a re-sit must not pay the full award again");
+  assert.ok(store.getState().xp > xpAfterFirst, "a re-sit still pays something");
+  assert.equal(store.getState().counters.exams, 1, "one stage passed, counted once");
+  store.reset();
+});
+
+test("certificates report the highest band, in ladder order", () => {
+  store.reset();
+  store.recordExam("es", "B1", 90);
+  store.recordExam("es", "A1", 90);
+  assert.deepEqual(store.certifiedBands("es"), ["A1", "B1"], "bands must read lowest → highest");
+  assert.equal(store.certifiedBand("es"), "B1", "the certificate shows the highest band earned");
+  assert.equal(store.certifiedBand("fr"), null, "an untouched language certifies nothing");
+  store.recordExam("fr", "A1", 85);
+  assert.deepEqual(store.certifiedLanguages().sort(), ["es", "fr"]);
+  assert.equal(store.examsPassed(), 3);
+  store.reset();
+});
+
+test("a certificate survives an import from another device", () => {
+  store.reset();
+  store.recordExam("es", "A1", 95);
+  const backup = store.exportData();
+  store.reset();
+  assert.equal(store.examPassed("es", "A1"), false, "reset really cleared it");
+  store.recordExam("es", "A1", 60); // this device only ever failed
+  assert.equal(store.importData(backup).ok, true);
+  assert.equal(store.examPassed("es", "A1"), true, "the imported pass must win");
+  assert.equal(store.examResult("es", "A1").best, 95, "and bring its best score with it");
+  store.reset();
+});
+
 test("levels follow the 200-XP ladder", () => {
   assert.equal(store.levelFromXp(0), 1);
   assert.equal(store.levelFromXp(199), 1);

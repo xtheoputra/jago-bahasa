@@ -75,7 +75,10 @@ function render(hash) {
       `--user-data-dir=${profileDir}`,
       "--enable-logging=stderr",
       "--v=0",
-      "--virtual-time-budget=12000",
+      // Virtual time is fast-forwarded, so a larger cap costs nothing on a
+      // quiet machine — it only buys headroom when the box is busy and the
+      // module graph genuinely takes longer to settle.
+      "--virtual-time-budget=20000",
       "--dump-dom",
       BASE + hash,
     ],
@@ -89,18 +92,19 @@ function render(hash) {
 }
 
 /** Assert a route renders, contains every marker, and logs nothing.
- *  Three things can make a single dump arrive early: the modules may not have
- *  executed yet (no `<div class="view">`), the route's chunk may still be in
- *  flight (skeleton still up), or a module fetch may have timed out while the
- *  machine was busy running the rest of the suite. All three are transient, so
- *  every attempt is retried — including one that logged an error. Nothing is
- *  weakened by that: a genuinely broken route fails on every attempt, and it is
- *  the LAST attempt that has to come back both complete and silent. */
+ *  A single dump can arrive before the app is ready, and it is a race with the
+ *  network, not a defect: --virtual-time-budget fast-forwards timers but does
+ *  not wait for module fetches, so the very first visit to a URL — cold HTTP
+ *  cache, ~40 ES modules, plus the route's lazy vocabulary chunk — can dump the
+ *  bare shell. The second visit is warm and instant. So every attempt is
+ *  retried, including one that logged an error. Nothing is weakened by that: a
+ *  genuinely broken route fails every attempt, and it is the LAST attempt that
+ *  has to come back both complete and silent. */
 function expectRoute(hash, markers) {
   const want = ['class="view"', ...markers];
   let dom = "",
     errors = [];
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     ({ dom, errors } = render(hash));
     if (!errors.length && want.every((m) => dom.includes(m))) break;
   }
@@ -168,6 +172,22 @@ test("the zero→expert path renders its six stages and a playable drill", opts,
   assert.ok(stages.length >= 6, `only ${stages.length} stages rendered`);
 
   expectRoute("#/drill/ko/A1", ["quiz-options", "quiz-opt", "drill-def"]);
+});
+
+test("a stage exam renders a paper, and the certificate stays locked until it is earned", opts, () => {
+  // The exam draws on the lessons AND the dictionary, so the path must offer
+  // it wherever a stage has enough material behind it.
+  const path = expectRoute("#/path/ko", ['href="#/exam/ko/A1"']);
+  assert.ok(!path.includes('href="#/cert/ko"'), "a certificate link appeared before any exam was passed");
+
+  const exam = expectRoute("#/exam/ko/A1", ["quiz-options", "quiz-opt", "exam-prompt", "exam-note"]);
+  const opts_ = exam.match(/class="quiz-opt/g) || [];
+  assert.ok(opts_.length >= 2, `only ${opts_.length} answers offered`);
+  // Nothing may pre-announce the answer: the paper carries no verdict classes.
+  assert.ok(!/class="quiz-opt[^"]*(correct|wrong)/.test(exam), "the exam leaked the answer in its markup");
+
+  // With nothing passed, the certificate route is an invitation, not a claim.
+  expectRoute("#/cert/ko", ["empty"]);
 });
 
 test("an unknown route shows the 404 view", opts, () => {

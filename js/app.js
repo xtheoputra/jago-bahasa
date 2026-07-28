@@ -24,6 +24,7 @@ import {
 } from "./views/practice.js";
 import { renderDictionary, renderBook, renderEntry, renderGuide, resetDictionaryIndex } from "./views/dictionary.js";
 import { renderPathIndex, renderPath, renderDrill } from "./views/path.js";
+import { renderExam, renderCertificate } from "./views/exam.js";
 import { loadLexicons, loadAllLexicons, lexiconLoaded } from "./lexicon.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
 import { notFound } from "./views/partials.js";
@@ -108,6 +109,10 @@ registerRoutes({
   guide: { render: needsBook(renderGuide) },
   path: { render: (view, params, ctx) => (params[0] ? needsBook(renderPath)(view, params, ctx) : renderPathIndex(view, params, ctx)) },
   drill: { render: needsBook(renderDrill) },
+  // The exam samples the lessons *and* the dictionary of a stage, so it waits
+  // for both chunks; the certificate reads state only and needs neither.
+  exam: { render: needsBook(renderExam, true) },
+  cert: { render: renderCertificate },
   course: { render: renderCourse },
   lesson: { render: needsCourse(renderLesson) },
   flashcards: { render: needsCourse(renderFlashcards) },

@@ -1000,3 +1000,47 @@ button { font-family: inherit; }
 
 .drill-def { font-size: 1.15rem; font-weight: 700; line-height: 1.45; }
 .drill-gloss { color: var(--text-dim); font-weight: 600; margin-top: 6px; }
+
+/* ------------------------------------------------------------ stage exam */
+.stage--passed { border-left-color: var(--accent); }
+.stage__exam { display: inline-block; margin: 14px 0 0 10px; text-decoration: none; }
+.stage__drill + .stage__exam { margin-left: 10px; }
+.chip--pass { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; }
+
+.exam-prompt { font-size: 1.2rem; font-weight: 700; line-height: 1.5; }
+.exam-note { color: var(--text-faint); font-size: .84rem; text-align: center; margin: 14px 0 0; }
+/* Under exam conditions a tap only confirms it was recorded — no verdict. */
+.quiz-opt.chosen { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.exam-result--pass { border: 1px solid var(--accent); }
+.exam-verdict { color: var(--text-dim); font-weight: 600; margin: 10px auto 0; max-width: 46ch; }
+.exam-review { text-align: left; margin-top: 20px; border-top: 1px solid var(--line); padding-top: 14px; }
+.exam-review h3 { font-size: .75rem; text-transform: uppercase; letter-spacing: .09em; color: var(--text-faint); margin: 0 0 8px; }
+.exam-misses { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.exam-misses li { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: .93rem; }
+.exam-misses a { font-weight: 800; text-decoration: none; color: var(--brand); }
+.exam-misses span { color: var(--text-dim); }
+
+/* ------------------------------------------------------------ certificate */
+.cert { background: var(--surface-2); border: 1px solid var(--line); border-radius: 20px; padding: 10px; }
+.cert__inner { border: 2px solid var(--accent); border-radius: 14px; padding: 30px 24px; text-align: center; }
+.cert__seal { font-size: 3rem; line-height: 1; }
+.cert__eyebrow { text-transform: uppercase; letter-spacing: .16em; font-size: .72rem; font-weight: 800; color: var(--text-faint); margin: 10px 0 0; }
+.cert__lang { font-size: 1.6rem; margin: 6px 0 14px; }
+.cert__awarded, .cert__for { color: var(--text-faint); font-size: .86rem; margin: 0; }
+.cert__name { font-size: 1.5rem; font-weight: 800; margin: 4px 0 14px; }
+.cert__band { font-size: 1.1rem; font-weight: 700; margin: 6px 0 14px; display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.cert__can { list-style: none; margin: 0 auto; padding: 0; max-width: 46ch; color: var(--text-dim); font-size: .9rem; display: grid; gap: 4px; text-align: left; }
+.cert__meta { display: flex; justify-content: center; gap: 26px; flex-wrap: wrap; margin-top: 22px; }
+.cert__meta small { display: block; color: var(--text-faint); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+.cert__meta strong { font-size: 1rem; }
+.cert__foot { color: var(--text-faint); font-size: .76rem; margin: 22px 0 0; }
+
+/* Printing a certificate should yield the certificate — nothing else. */
+@media print {
+  .appbar, .bottomnav, .no-print, .toast, .skip-link { display: none !important; }
+  body, .main { background: #fff; color: #111; }
+  .cert { border: none; padding: 0; }
+  .cert__inner { border-color: #111; }
+  .cert__eyebrow, .cert__awarded, .cert__for, .cert__meta small, .cert__foot { color: #444; }
+  .cert__can { color: #222; }
+}

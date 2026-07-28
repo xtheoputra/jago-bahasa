@@ -116,10 +116,23 @@ before(async () => {
   await sleep(2500);
 });
 
+/** Resolve once a spawned process has really exited (or after a grace period).
+ *  Killing is asynchronous: without this the next test file starts while a
+ *  headless Chrome is still tearing down, and its own renders lose the race. */
+const ended = (p) =>
+  !p || p.exitCode !== null || p.signalCode
+    ? Promise.resolve()
+    : new Promise((res) => {
+        const done = () => res();
+        p.once("exit", done);
+        setTimeout(done, 4000);
+      });
+
 after(async () => {
   try { ws?.close(); } catch (e) {}
   chrome?.kill();
   server?.kill();
+  await Promise.all([ended(chrome), ended(server)]);
   // Windows keeps the Chrome profile locked for a moment after the process
   // dies; temp-dir housekeeping must never fail the run.
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -183,6 +196,77 @@ test("starring a headword puts it in the review rotation, not in limbo", opts, a
   assert.ok(await evalJS(`document.querySelector('.review-term')?.textContent.includes('casa')`),
     "the review card is not showing the starred headword");
   assert.deepEqual(exceptions, [], `starring flow threw: ${exceptions.join(" | ")}`);
+});
+
+test("an exam can be sat to the end, and grades what it asked about", opts, async () => {
+  exceptions = [];
+  await evalJS(`localStorage.removeItem('jb.progress.v1::guest')`);
+  await send("Page.navigate", { url: BASE + "/#/exam/es/A1" });
+  await sleep(3000);
+  assert.ok(await evalJS(`!!document.querySelector('.quiz-opt')`), "the exam never handed out a paper");
+
+  // Answer every question with the first option — a real sitting, mostly wrong.
+  await evalJS(`document.querySelector('.quiz-opt:not([disabled])').click()`);
+  await sleep(120);
+  assert.equal(
+    await evalJS(`!!document.querySelector('.quiz-opt.correct, .quiz-opt.wrong')`),
+    false,
+    "the exam revealed the answer mid-paper — that is what practice modes are for"
+  );
+  for (let i = 0; i < 20; i++) {
+    const done = await evalJS(`!!document.querySelector('.quiz-result')`);
+    if (done) break;
+    await evalJS(`document.querySelector('.quiz-opt:not([disabled])')?.click()`);
+    await sleep(560);
+  }
+  assert.ok(await evalJS(`!!document.querySelector('.quiz-result')`), "the paper never reached a result screen");
+
+  const recorded = await evalJS(`(() => {
+    const st = JSON.parse(localStorage.getItem('jb.progress.v1::guest') || '{}');
+    return JSON.stringify({ rec: (st.exams || {})['es/A1'] || null, srs: Object.keys(st.srs || {}).length });
+  })()`);
+  const { rec, srs } = JSON.parse(recorded);
+  assert.ok(rec, "sitting an exam left no record at all");
+  assert.equal(rec.tries, 1, "one sitting must count as one attempt");
+  assert.ok(rec.best >= 0 && rec.best <= 100, `nonsense score recorded: ${rec.best}`);
+  assert.ok(srs >= 10, `an exam of 15 questions scheduled only ${srs} cards`);
+  assert.deepEqual(exceptions, [], `the exam threw: ${exceptions.join(" | ")}`);
+});
+
+test("a passed stage is sealed on the path and printed on a certificate", opts, async () => {
+  exceptions = [];
+  await evalJS(`localStorage.setItem('jb.progress.v1::guest', JSON.stringify({
+    xp: 400, exams: { 'es/A1': { best: 93, passed: true, at: '2026-07-28', tries: 2 } }
+  }))`);
+  // The state module reads storage at import time, so this needs a real reload.
+  await send("Page.navigate", { url: BASE + "/#/cert/es" });
+  await sleep(400);
+  await send("Page.reload", { ignoreCache: true });
+  await sleep(3000);
+
+  const cert = await evalJS(`document.querySelector('.cert')?.textContent || ""`);
+  assert.ok(cert.includes("A1"), "the certificate does not name the band it certifies");
+  assert.ok(cert.includes("93%"), "the certificate does not show the score behind it");
+  assert.ok(await evalJS(`!!document.querySelector('#cprint')`), "a certificate you cannot print or save");
+
+  // Printing must yield the certificate, not the whole app around it.
+  await send("Emulation.setEmulatedMedia", { media: "print" });
+  // A hidden ancestor does not change a child's own computed display, so ask
+  // the only question that matters on paper: is the box actually laid out?
+  const hidden = await evalJS(`(() => {
+    const painted = (s) => { const el = document.querySelector(s); return !!el && el.getClientRects().length > 0; };
+    return JSON.stringify({ bar: painted('.appbar'), nav: painted('.bottomnav'),
+                            btn: painted('#cprint'), cert: painted('.cert') });
+  })()`);
+  const print = JSON.parse(hidden);
+  await send("Emulation.setEmulatedMedia", { media: "" });
+  assert.ok(!print.bar && !print.nav && !print.btn, `app chrome would be printed onto the certificate: ${hidden}`);
+  assert.ok(print.cert, "the certificate itself would not print");
+
+  await go("#/path/es", 2600);
+  assert.ok(await evalJS(`!!document.querySelector('.chip--pass')`), "the passed stage carries no seal");
+  assert.ok(await evalJS(`!!document.querySelector('a[href="#/cert/es"]')`), "the path hides the certificate it earned");
+  assert.deepEqual(exceptions, [], `the certificate flow threw: ${exceptions.join(" | ")}`);
 });
 
 test("a dictionary drill schedules the words it actually asked about", opts, async () => {

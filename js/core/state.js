@@ -5,7 +5,8 @@
    pluggable `remote` adapter; on login, server progress is merged in.
    ========================================================================= */
 import { COURSES, courseLoaded } from "../data.js";
-import { getLexicon, lexiconLoaded, lexiconMeta, dictLesson, dictItem } from "../lexicon.js";
+import { BANDS, getLexicon, lexiconLoaded, lexiconMeta, dictLesson, dictItem } from "../lexicon.js";
+import { PASS_PCT } from "./exam.js";
 
 const KEY_BASE = "jb.progress.v1";
 const nsKey = (uid) => `${KEY_BASE}::${uid || "guest"}`;
@@ -35,6 +36,7 @@ export function defaultState() {
     bestStreak: 0, // longest streak ever reached
     xpHistory: {}, // "YYYY-MM-DD": xp earned that day (for the trend chart)
     tally: {}, // per-mode { tries, ok } for accuracy insights
+    exams: {}, // "<lang>/<band>": { best, passed, at, tries } — stage certificates
     reminder: { enabled: false, time: "19:00" }, // local study reminder
     updatedAt: 0,
   };
@@ -343,6 +345,54 @@ export function srsReviewed(n) {
   persist();
 }
 
+/* ------------------------------------------------------------ stage exams
+   A CEFR stage is *passed* the first time a paper scores at least PASS_PCT.
+   The record keeps the best score ever seen, so a later shaky attempt can
+   never take a certificate back — and `at` is the date it was first earned,
+   which is what the certificate prints. */
+export function recordExam(lang, band, pct) {
+  const key = `${lang}/${band}`;
+  state.exams = state.exams || {};
+  const prev = state.exams[key] || { best: 0, passed: false, at: null, tries: 0 };
+  const passed = pct >= PASS_PCT;
+  const first = passed && !prev.passed;
+  state.exams[key] = {
+    best: Math.max(prev.best || 0, pct),
+    passed: prev.passed || passed,
+    at: prev.at || (passed ? todayISO() : null),
+    tries: (prev.tries || 0) + 1,
+  };
+  // Earning a stage is worth far more than drilling it — but only once, so the
+  // certificate cannot be farmed by re-sitting a paper you already passed.
+  const gain = first ? 80 : passed ? 10 : 0;
+  if (gain) award(gain);
+  if (first) {
+    state.counters = state.counters || {};
+    state.counters.exams = (state.counters.exams || 0) + 1;
+  }
+  touchStreak();
+  persist();
+  return { passed, first, best: state.exams[key].best, gain };
+}
+export const examResult = (lang, band) => (state.exams && state.exams[`${lang}/${band}`]) || null;
+export const examPassed = (lang, band) => !!(examResult(lang, band) || {}).passed;
+export function examsPassed() {
+  return Object.values(state.exams || {}).filter((e) => e && e.passed).length;
+}
+/** Every band certified in a language, lowest first — the certificate's body. */
+export const certifiedBands = (lang) => BANDS.filter((b) => examPassed(lang, b));
+/** The highest band certified in a language, or null — the certificate's title. */
+export function certifiedBand(lang) {
+  const all = certifiedBands(lang);
+  return all.length ? all[all.length - 1] : null;
+}
+/** Languages holding at least one certificate, for the progress page. */
+export function certifiedLanguages() {
+  return [...new Set(Object.entries(state.exams || {})
+    .filter(([, v]) => v && v.passed)
+    .map(([k]) => k.split("/")[0]))];
+}
+
 /* ------------------------------------------------------------- daily goal */
 export function setDailyGoal(n) {
   if (!DAILY_GOALS.includes(n)) return;
@@ -607,6 +657,17 @@ function mergeInto(target, src) {
     const a = target.tally[m] || { tries: 0, ok: 0 },
       b = src.tally[m] || { tries: 0, ok: 0 };
     target.tally[m] = { tries: Math.max(a.tries, b.tries), ok: Math.max(a.ok, b.ok) };
+  }
+  // A certificate is never lost in a merge: passed stays passed, best stays best.
+  target.exams = target.exams || {};
+  for (const k of Object.keys(src.exams || {})) {
+    const a = target.exams[k] || {}, b = src.exams[k] || {};
+    target.exams[k] = {
+      best: Math.max(a.best || 0, b.best || 0),
+      passed: !!(a.passed || b.passed),
+      at: a.at || b.at || null,
+      tries: Math.max(a.tries || 0, b.tries || 0),
+    };
   }
   if (src.reminder && !target.reminder) target.reminder = src.reminder;
   if (typeof src.dailyGoal === "number" && DAILY_GOALS.includes(src.dailyGoal) && !target.dailyGoal) {

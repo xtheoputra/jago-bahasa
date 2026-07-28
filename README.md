@@ -15,6 +15,7 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 | 📐 **Panduan Bahasa** | Muka buku tiap bahasa: sistem tulisan, kunci pelafalan (138 baris), dan inti tata bahasa (115 butir) — semuanya trilingual |
 | 🧭 **Jalur Nol → Ahli** | Enam tahap CEFR per bahasa: pernyataan "yang bisa kamu lakukan", pelajaran tahap itu, kata kamus tahap itu, dan progres nyata dari data belajarmu |
 | 🎯 **Latihan Kamus** | Kuis 10 soal per tahap CEFR langsung dari entri kamus (definisi → kata), lengkap dengan XP & statistik akurasi |
+| 🎓 **Ujian Tahap & Sertifikat** | 15 soal yang menguji **seluruh** tahap — pelajaran *dan* entri kamusnya — dalam tiga arah: arti→kata, kata→arti, dan isi rumpang kalimat. Tanpa bocoran di tengah ujian; jawaban benar baru terbuka di akhir bersama daftar yang meleset. Lulus di **80%** memberi sertifikat per bahasa yang bisa **dicetak / disimpan PDF** |
 | 🃏 **Flashcard interaktif** | Kartu balik dengan animasi 3D + navigasi keyboard |
 | 🗣️ **Dialog percakapan** | Pelajaran "Percakapan" bergaya chat **multi-pembicara (A/B/C/D)** — grup & dialog panjang — dengan TTS & arti tiap baris di semua bahasa |
 | 🧠 **Kuis otomatis** | Pilihan ganda (acak kriptografis) dengan skor, cincin progres, dan XP |
@@ -97,7 +98,7 @@ Server ini melayani file statis **dan** API auth/sinkronisasi di `/api/*`, jadi 
 ### 🧪 Menjalankan Tes
 
 ```bash
-npm test          # 110 tes, ±39 detik, tanpa satu pun dependency
+npm test          # 126 tes, ±45 detik, tanpa satu pun dependency
 ```
 
 Memakai test runner bawaan Node (`node --test`, butuh Node ≥ 18) — **tidak ada paket yang perlu dipasang**.
@@ -106,12 +107,13 @@ Memakai test runner bawaan Node (`node --test`, butuh Node ≥ 18) — **tidak a
 |---|---|
 | `tests/content.test.mjs` | Bentuk katalog: metadata lengkap 3 bahasa, ≥4 arti unik per pelajaran (kuis butuh 4 opsi), romanisasi wajib untuk aksara non-Latin, panjang `dialog` = jumlah baris, mode Isian & Pembangun Kalimat benar-benar bisa dimainkan di tiap bahasa |
 | `tests/lexicon.test.mjs` | Kamus buku: tiap kursus punya kamus & sebaliknya, jumlah entri cocok dengan indeks, lema unik, tiap entri lengkap (kelas kata, band CEFR, arti & definisi trilingual), romanisasi wajib untuk 9 aksara non-Latin, tiap lema masuk ke huruf alfabetnya sendiri dan blok hurufnya tidak berselang-seling, tiap band punya ≥4 entri (agar Latihan Kamus bisa dimainkan), muka buku lengkap, dan bintang kamus tidak terhapus oleh `favPool()` |
-| `tests/state.test.mjs` | Progres & gamifikasi: penjadwalan SRS (termasuk regresi zona waktu `parseISO`), target harian, retensi riwayat, ekspor/impor, isolasi progres antar-akun |
+| `tests/state.test.mjs` | Progres & gamifikasi: penjadwalan SRS (termasuk regresi zona waktu `parseISO`), target harian, retensi riwayat, ekspor/impor, isolasi progres antar-akun, dan sertifikat tahap (lulus di 80%, nilai terbaik tak pernah turun, ujian ulang tak dibayar penuh, sertifikat selamat saat impor) |
+| `tests/exam.test.mjs` | Keadilan soal ujian: soal hanya diambil dari tahap yang diuji, kata yang ada di pelajaran *dan* kamus jadi satu soal (bukan dua), tiap soal punya empat pilihan berbeda dengan tepat satu jawaban benar, satu berkas soal menanya lebih dari satu arah, dan soal rumpang benar-benar menyembunyikan katanya |
 | `tests/i18n.test.mjs` | Paritas kunci id/en/es, tidak ada terjemahan kosong, jumlah `%s` sama, semua kunci yang dipakai kode benar-benar ada |
 | `tests/assets.test.mjs` | Cangkang offline: tiap modul JS ada di daftar precache `sw.js` (dan sebaliknya), manifest & ikon valid, CSP index.html utuh |
 | `tests/server.test.mjs` | Backend sungguhan di port acak + `DATA_DIR` sementara: MIME, header keamanan, blokir `server/`/dotfile/path-traversal, alur daftar→masuk→sinkron→keluar, CSRF, batas laju, sandi tak pernah tersimpan polos |
 | `tests/smoke.test.mjs` | Render nyata di headless Chrome untuk 10+ rute — **console harus bersih**. Dilewati otomatis bila Chrome tidak ada (`CHROME_PATH` untuk menunjuk biner tertentu) |
-| `tests/interact.test.mjs` | **Mengklik** aplikasinya, bukan cuma merendernya: menyetir Chrome lewat DevTools Protocol (WebSocket bawaan Node, nol dependency) — Jodohkan harus benar-benar bisa dimenangkan, dan bintang kamus tidak boleh menggelembungkan tombol dek Favorit. Setiap exception yang tak tertangkap = gagal. Dilewati bila Chrome tidak ada atau Node < 21 |
+| `tests/interact.test.mjs` | **Mengklik** aplikasinya, bukan cuma merendernya: menyetir Chrome lewat DevTools Protocol (WebSocket bawaan Node, nol dependency) — Jodohkan harus benar-benar bisa dimenangkan, bintang kamus tidak boleh menggelembungkan tombol dek Favorit, ujian tahap harus bisa dikerjakan sampai layar hasil (tanpa membocorkan jawaban di tengah jalan), dan sertifikat harus tercetak sendirian — batang aplikasi & tombol tak boleh ikut ke kertas. Setiap exception yang tak tertangkap = gagal. Dilewati bila Chrome tidak ada atau Node < 21 |
 
 > `js/package.json` hanya berisi `{"type":"module"}` supaya Node bisa meng-`import` modul ES di `js/`
 > langsung saat pengujian (peramban mengabaikannya). Root tetap `commonjs` untuk server.
@@ -147,9 +149,9 @@ Jago Bahasa/
 │   ├── data/<kode>.js      # Kosakata per bahasa, dimuat saat dibutuhkan
 │   ├── lexicon.js          # Indeks kamus buku (band CEFR, alfabet per aksara, loader)
 │   ├── lexicon/<kode>.js   # Entri kamus + panduan bahasa, dimuat saat dibutuhkan
-│   ├── core/               # dom, ui, random (crypto Fisher–Yates), state, router
+│   ├── core/               # dom, ui, random (crypto Fisher–Yates), state, exam (soal ujian), router
 │   ├── auth/               # crypto (PBKDF2), db (IndexedDB), local/remote provider, session, validate
-│   ├── views/              # learn, practice, dictionary (kamus), path (jalur), auth, partials
+│   ├── views/              # learn, practice, dictionary (kamus), path (jalur), exam (ujian+sertifikat), auth, partials
 │   ├── chrome.js  pwa.js   # Tema/bahasa/menu akun/install · registrasi SW
 └── server/                 # Backend opsional (zero-dependency: node:http + node:crypto)
     ├── index.js  config.js  crypto.js (scrypt)  store.js (atomic JSON)

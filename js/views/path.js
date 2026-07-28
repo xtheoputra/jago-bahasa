@@ -10,6 +10,9 @@
      #/path            pick a language
      #/path/:lang      the six stages, with live progress
      #/drill/:lang/:band   10 questions from that stage's dictionary entries
+
+   The exam that certifies a stage lives in views/exam.js; this view only
+   shows the door to it, and the seal once it has been earned.
    ========================================================================= */
 import { $, $$, esc, mean } from "../core/dom.js";
 import { toast, confetti, speak, liveStatus } from "../core/ui.js";
@@ -17,6 +20,7 @@ import { shuffle } from "../core/random.js";
 import * as store from "../core/state.js";
 import { COURSES, findCourse } from "../data.js";
 import { BANDS, BAND_INFO, BAND_LEVEL, getLexicon, lexiconSize } from "../lexicon.js";
+import { examCandidates, MIN_POOL } from "../core/exam.js";
 import { navigate } from "../core/router.js";
 import { notFound } from "./partials.js";
 import { I18N } from "../i18n.js";
@@ -76,9 +80,13 @@ export function renderPath(view, [lang]) {
     const done = lessons.filter((l) => st.doneLessons[`${c.id}/${l.id}`]).length;
     const pct = lessons.length ? Math.round((done / lessons.length) * 100) : 0;
     const words = book ? book.entries.filter((e) => e.cefr === band) : [];
+    // The exam draws on the lessons AND the dictionary, so ask the generator
+    // itself whether this stage holds enough material to be certified.
+    const examinable = examCandidates(c, book, band).length >= MIN_POOL;
+    const passed = store.examResult(c.id, band);
 
     return `
-      <section class="card stage ${done && done === lessons.length ? "stage--done" : ""}">
+      <section class="card stage ${done && done === lessons.length ? "stage--done" : ""} ${passed && passed.passed ? "stage--passed" : ""}">
         <header class="stage__head">
           <span class="stage__icon" aria-hidden="true">${esc(info.icon)}</span>
           <div style="flex:1 1 200px;min-width:0">
@@ -86,6 +94,7 @@ export function renderPath(view, [lang]) {
             <div class="progress" aria-hidden="true"><i style="width:${pct}%"></i></div>
             <small>${done}/${lessons.length} ${esc(t("courses.lessons"))} · ${pct}%</small>
           </div>
+          ${passed && passed.passed ? `<span class="chip chip--pass">🎓 ${esc(t("path.certified", passed.best))}</span>` : ""}
           ${done && done === lessons.length && lessons.length ? `<span class="chip chip--brand">${esc(t("path.stageDone"))}</span>` : ""}
         </header>
 
@@ -109,6 +118,7 @@ export function renderPath(view, [lang]) {
           ${words.slice(0, 6).map((e) => `<a class="chip chip--tap" href="#/entry/${encodeURIComponent(e.lang)}/${encodeURIComponent(e.w)}">${esc(e.w)}</a>`).join("")}
         </div>
         ${words.length >= 4 ? `<a class="btn btn--sm stage__drill" href="#/drill/${esc(c.id)}/${esc(band)}">📖 ${esc(t("drill.go"))} →</a>` : ""}` : ""}
+        ${examinable ? `<a class="btn btn--sm stage__exam" href="#/exam/${esc(c.id)}/${esc(band)}">🎓 ${esc(t("exam.go"))} →</a>` : ""}
       </section>`;
   };
 
@@ -131,6 +141,7 @@ export function renderPath(view, [lang]) {
     </div>
 
     <div class="path-links">
+      ${store.certifiedBand(c.id) ? `<a class="btn btn--sm" href="#/cert/${esc(c.id)}">📜 ${esc(t("cert.open"))}</a>` : ""}
       <a class="btn btn--ghost btn--sm" href="#/dict/${esc(c.id)}">📖 ${esc(t("dict.open"))}</a>
       <a class="btn btn--ghost btn--sm" href="#/guide/${esc(c.id)}">📐 ${esc(t("guide.title"))}</a>
       <a class="btn btn--ghost btn--sm" href="#/course/${esc(c.id)}">📚 ${esc(t("course.lessons"))}</a>

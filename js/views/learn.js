@@ -431,6 +431,8 @@ const ACHIEVEMENTS = [
   { id: "goalDays", emoji: "🎯", name: { id: "Disiplin", en: "Disciplined", es: "Disciplinado" }, desc: { id: "Capai target harian 5 hari", en: "Hit your daily goal 5 days", es: "Cumple tu meta diaria 5 días" }, test: () => store.counter("goalDays") >= 5 },
   { id: "dictated", emoji: "📝", name: { id: "Telinga Tajam", en: "Sharp Ear", es: "Oído fino" }, desc: { id: "Tulis 30 kata dari dikte", en: "Write 30 words from dictation", es: "Escribe 30 palabras al dictado" }, test: () => store.counter("dictated") >= 30 },
   { id: "poly10", emoji: "🧭", name: { id: "Warga Dunia", en: "World Citizen", es: "Ciudadano del mundo" }, desc: { id: "Coba 10 bahasa berbeda", en: "Try 10 languages", es: "Prueba 10 idiomas" }, test: () => store.languagesTouched() >= 10 },
+  { id: "exam1", emoji: "🎓", name: { id: "Bersertifikat", en: "Certified", es: "Certificado" }, desc: { id: "Lulus 1 ujian tahap", en: "Pass 1 stage exam", es: "Aprueba 1 examen de etapa" }, test: () => store.examsPassed() >= 1 },
+  { id: "exam6", emoji: "📜", name: { id: "Tangga Penuh", en: "Full Ladder", es: "Escalera completa" }, desc: { id: "Lulus 6 ujian tahap", en: "Pass 6 stage exams", es: "Aprueba 6 exámenes de etapa" }, test: () => store.examsPassed() >= 6 },
 ];
 
 export function renderProgress(view) {
@@ -445,6 +447,7 @@ export function renderProgress(view) {
   const mistakes = store.mistakeCount();
   const favs = store.favCount(); // lesson words — what the Favourites deck plays
   const lexFavs = store.lexFavCount(); // dictionary headwords — browsed in the Kamus
+  const certs = store.certifiedLanguages(); // stages that have actually been passed
   const rem = store.getReminder();
   const unlocked = ACHIEVEMENTS.filter((a) => a.test()).length;
 
@@ -488,6 +491,7 @@ export function renderProgress(view) {
         ${mistakes ? `<a class="btn btn--sm" href="#/mistakes" aria-label="${esc(t("mistakes.count", mistakes))}">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
         ${favs ? `<a class="btn btn--sm" href="#/favorites">⭐ ${esc(t("fav.title"))} · ${favs}</a>` : ""}
         ${lexFavs ? `<a class="btn btn--sm btn--ghost" href="#/search">📖 ${esc(t("dict.myFav"))} · ${lexFavs}</a>` : ""}
+        ${certs.length ? `<a class="btn btn--sm btn--ghost" href="#/cert/${esc(certs[0])}">📜 ${esc(t("cert.title"))} · ${store.examsPassed()}</a>` : ""}
       </div>
     </div>
 
@@ -653,6 +657,7 @@ export function renderStats(view) {
     ["dictation", "📝", "lesson.dictation"], ["cloze", "✍️", "lesson.cloze"],
     ["speak", "🎤", "lesson.speak"], ["build", "🧩", "lesson.build"], ["mix", "🎲", "mix.title"],
     ["mistakes", "🧯", "mistakes.title"], ["fav", "⭐", "fav.title"], ["drill", "📖", "drill.title"],
+    ["exam", "🎓", "exam.title"],
   ];
   const accRows = MODES.map(([m, e, k]) => ({ e, k, a: store.accuracy(m) })).filter((r) => r.a);
 

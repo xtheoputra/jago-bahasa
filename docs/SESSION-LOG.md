@@ -832,3 +832,83 @@ tiap percobaan), tapi kegagalan sesaat saat mesin sibuk tak lagi menggoyahkan uj
 ---
 
 *Diperbarui — v3.2 2026-07-28 (entri kamus masuk rotasi SRS lewat satu `resolveCard`; bintang & latihan kamus kini menjadwalkan; 5 tes baru, uji asap dikeraskan).*
+
+---
+
+## Pembaruan v3.3 — Ujian Tahap & Sertifikat (2026-07-28)
+
+Permintaan pengguna: *"lanjutkan tambahkan ide yang terbaik disini"* — dari daftar sisa, yang
+dipilih adalah ujian kelulusan per tahap CEFR.
+
+### Masalahnya
+
+Jalur "Nol → Ahli" punya awal dan isi, tapi tak punya **bukti**. Enam tahap terpampang, kata
+dan pelajaran tersedia, latihan berjalan — tetapi tak pernah ada satu momen pun yang berkata
+"A1 kamu selesai". Tanpa garis akhir, tahap hanyalah rak, bukan tangga.
+
+### Ujian yang benar-benar menguji tahapnya
+
+`js/core/exam.js` (murni, tanpa DOM, tanpa state — karena itu bisa diuji penuh di Node)
+membangun berkas soal dari **kedua paruh aplikasi sekaligus**: pelajaran pada tingkat kesulitan
+tahap itu **dan** entri kamus pada band itu. Sebuah kata yang hidup di keduanya jadi satu soal,
+bukan dua — dan versi yang lebih kaya (yang punya contoh/definisi) yang dipertahankan.
+
+Soalnya bertanya dalam **tiga arah**, supaya pengenalan semata tak bisa meloloskan siapa pun:
+
+| Jenis | Yang ditampilkan | Yang dijawab |
+|---|---|---|
+| `mean` | definisi/arti | kata mana yang dimaksud |
+| `term` | katanya | apa artinya |
+| `gap` | kalimat contoh dengan lubang | kata yang hilang |
+
+Soal rumpang hanya dibuat bila contohnya benar-benar memuat kata itu — lubang yang tak mungkin
+diisi lebih buruk daripada tak ada lubang.
+
+### Yang membedakannya dari mode latihan
+
+**Tidak ada bocoran di tengah jalan.** Setiap mode lain di aplikasi ini langsung memberi tahu
+benar/salah; sebuah ujian harus membiarkanmu salah dan baru memberitahu di akhir — di sana
+muncul daftar "yang meleset" lengkap dengan tautan ke entri kamusnya. Jawaban tetap menjadwalkan
+katanya ke SRS dan masuk dek Perbaiki Kesalahan, jadi ujian juga tetap sesi belajar.
+
+Lulus pada **80%**. Nilai terbaik tak pernah turun: ujian ulang yang buruk tidak pernah mencabut
+sertifikat, dan hadiah XP besar hanya dibayar sekali agar tak bisa diternak.
+
+### Sertifikat yang bisa dipegang
+
+`#/cert/:lang` menyusun sertifikat: bahasa, band tertinggi, pernyataan "yang bisa kamu lakukan"
+untuk band itu, daftar tahap yang lulus, nilai terbaik, dan tanggal diraih. Tombol cetak
+menghasilkan **sertifikat saja** — batang aplikasi, navigasi bawah, dan tombolnya sendiri
+disembunyikan lewat `@media print`, dan itu diuji sungguhan (bukan diasumsikan) dengan
+mengemulasi media cetak lalu memastikan kotak-kotak itu memang tak tergambar.
+
+Sertifikat ini jujur menyebut dirinya **diterbitkan sendiri** — penanda kemajuan pribadi, bukan
+sertifikasi CEFR resmi.
+
+### Bukti
+
+`tests/exam.test.mjs` (9 tes baru) menjaga keadilan berkas soal; `tests/state.test.mjs` (+4)
+menjaga aturan sertifikat; uji asap menjaga rutenya; `tests/interact.test.mjs` (+2) benar-benar
+**mengerjakan** satu ujian sampai layar hasil di Chrome sungguhan, memastikan tak ada jawaban
+yang bocor di tengah, lalu memeriksa segel di jalur dan sertifikat yang tercetak. Tiga di
+antaranya **dibuktikan gagal** ketika bug-nya sengaja dikembalikan.
+
+Satu kesalahan saya sendiri tertangkap di sini: pemeriksaan cetak versi pertama membaca
+`getComputedStyle(...).display` sebuah tombol — padahal induk yang `display:none` tidak mengubah
+nilai itu. Yang benar adalah menanyakan apakah kotaknya tergambar (`getClientRects()`).
+
+### Uji asap: penyebab kegoyahannya akhirnya ketemu
+
+Kegagalan sesekali "rute tak pernah memasang view" ternyata **bukan** bug aplikasi dan bukan
+soal mesin sibuk: `--virtual-time-budget` mempercepat timer tapi **tidak menunggu unduhan
+modul**, jadi kunjungan pertama ke sebuah URL (cache kosong, ~40 modul ES, plus potongan
+kosakata malas) bisa menghasilkan cangkang kosong. Kunjungan kedua selalu hangat — terbukti
+dengan menjalankan dump enam kali berturut-turut: 5.442 byte tanpa view, lalu 19.955 byte
+dengan enam tahap, lima kali. Karena itu percobaan ulang dinaikkan ke lima dan teardown
+`interact` kini benar-benar menunggu Chrome mati sebelum berkas uji berikutnya mulai.
+
+`npm test` → **126 hijau** (dari 110). SW `jb-v3.2.0` → **`jb-v3.3.0`**.
+
+---
+
+*Diperbarui — v3.3 2026-07-28 (ujian tahap CEFR 3 arah + sertifikat yang bisa dicetak; 16 tes baru; penyebab kegoyahan uji asap ditemukan & ditangani).*

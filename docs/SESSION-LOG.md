@@ -5,6 +5,32 @@ bersama Claude Code, agar konteks dan keputusan desain tersimpan dalam repositor
 
 ---
 
+## 🔜 BESOK MULAI DARI SINI (per 2026-07-28, setelah v3.3)
+
+**Keadaan sekarang:** commit `6742dee` sudah di-push, working tree bersih,
+`npm test` **126 hijau** (±45 detik), service worker `jb-v3.3.0`.
+Verifikasi selalu lewat `npm test` — jangan bikin pemeriksaan manual lagi.
+
+**Yang belum pernah dibuktikan (paling layak dikerjakan lebih dulu):**
+- Ujian tahap & sertifikat v3.3 **belum pernah dipakai pengguna sungguhan** di
+  peramban biasa — baru dibuktikan lewat Chrome headless. Coba sekali di
+  ponsel/desktop, terutama **cetak sertifikatnya ke PDF**.
+- 21 dari 23 bahasa masih **144 lema**, sementara `en` & `ko` 167–168. Isi
+  kamus belum seimbang; struktur & tesnya sudah siap menerima tambahan
+  (tambah entri + perbarui `n` di `js/lexicon.js`).
+
+**Ide yang sudah dianalisis tapi belum dikerjakan:**
+penanda "suara tak tersedia" (TTS), indeks cari yang lebih ringan, daftar kata
+buatan sendiri, bahasa antarmuka ke-4, dan ujian gabungan lintas tahap.
+
+**Jebakan yang jangan didiagnosis ulang:** kalau uji asap sesekali bilang "rute
+tak pernah memasang view", itu **bukan** bug aplikasi — `--virtual-time-budget`
+tidak menunggu unduhan modul, jadi kunjungan pertama ke sebuah URL bisa mendump
+cangkang kosong. Mitigasinya sudah terpasang (5× percobaan, budget 20000,
+teardown `interact` menunggu Chrome mati). Rinciannya di bagian v3.3.
+
+---
+
 ## Tujuan dari Pengguna
 
 > "Buatkan website PWA, tujuan saya ingin membuat media pembelajaran saya di

@@ -632,3 +632,73 @@ SW `jb-v2.15.0` → **`jb-v3.0.0`**.
 ---
 
 *Diperbarui — v3.0 2026-07-28 (kamus buku 23 bahasa: +1.704 entri, +23 panduan bahasa, 4 layar kamus, jalur nol→ahli + latihan kamus, 15 tes baru).*
+
+---
+
+## Pembaruan v3.1 — Kamus Digandakan: +1.655 Lema Inti Bertema (2026-07-28)
+
+Tanggapan pengguna atas v3.0: *"tambahkan lagi kosakata nya, sangat sedikit jika saya lihat,
+kamus saja punya ribuan, ini hanya sedikit"* — kritik yang tepat. 72 lema per bahasa memang
+terlalu tipis untuk disebut kamus.
+
+### 1. Dua kelas entri, seperti kamus cetak sungguhan
+
+Sebelumnya tiap entri wajib bawa definisi trilingual. Itu benar untuk kata abstrak, tetapi
+boros untuk kata benda konkret: kamus terbitan mana pun menulis *pintu* atau *sendok* cukup
+dengan padanan pendeknya. Karena itu `d` (definisi) dan `ex` (contoh) kini **opsional**:
+
+| | Entri garapan penuh | Entri pendek |
+|---|---|---|
+| Isi | lema · lafal · kelas kata · band · arti · **definisi** · **contoh** · sinonim · catatan | lema · lafal · kelas kata · band · arti |
+| Untuk | kata abstrak, idiom, penghubung, "teman palsu" | kata benda konkret sehari-hari |
+| Jumlah | 1.704 | 1.655 |
+
+`views/dictionary.js`, halaman entri, dan Latihan Kamus semuanya menyesuaikan: blok "Definisi"
+hanya muncul bila ada, dan drill memakai arti pendek sebagai soal bila entri tak berdefinisi.
+Tesnya diubah dari "80% entri wajib bercontoh" menjadi jaminan yang lebih tepat: **tiap bahasa
+minimal 60 entri berdefinisi dan 60 entri bercontoh**, plus ≥40% keseluruhan bercontoh.
+
+### 2. Enam blok tema × 12 lema × 23 bahasa
+
+Konsep yang sama persis dipakai di semua bahasa (arti id/en/es identik, hanya lemanya berbeda),
+jadi pelajar bisa membandingkan bahasa secara langsung:
+
+🏠 rumah & perabot · 🍞 makanan & minuman · 👕 pakaian & tubuh · 🌳 alam & hewan ·
+🏙️ kota & transportasi · 💼 kerja, uang & teknologi
+
+Ini bukan daftar mentah — banyak entri membawa catatan yang justru paling sering menjebak:
+teman palsu Melayu–Indonesia (**kereta** = mobil, **pokok** = pohon, **budak** = anak),
+homonim yang berbahaya (Korea **눈** mata/salju, **말** kuda/perkataan; Vietnam **đường**
+gula/jalan; Turki **yüz** wajah/seratus; Arab **مطار** bandara vs **مطر** hujan),
+jamak tak beraturan (Inggris tooth→teeth, Prancis œil→yeux, Italia uovo→uova),
+dan bentukan asli yang indah (Swahili **barua pepe** 'surat elektronik', **nenosiri**
+'kata rahasia'; Turki **bilgisayar** 'penghitung informasi'; Mandarin **电脑** 'otak listrik').
+
+### 3. Perbaikan indeks aksara yang ditemukan saat menulis konten
+
+- Huruf Latin yang **tidak bisa** dilipat NFD kini punya tabel sendiri: Ł→L (Polandia),
+  Ø→O, Æ→A, Đ→D, ß→S. Sebelumnya `łatwy` jatuh ke keranjang "#".
+- Alfabet Thai ditambah **ฝ** — ketahuan saat menambahkan ฝน (hujan).
+
+### Angka akhir
+
+| | v3.0 | v3.1 |
+|---|---|---|
+| Entri kamus | 1.704 | **3.359** (en & ko 167–168, sisanya 144) |
+| Sebaran band | ±284 per band | A1 836 · A2 836 · B1 560 · B2 560 · C1 284 · C2 283 |
+| Lema yang bisa dicari | 5.267 | **6.922** |
+| Berlafal (IPA/romanisasi) | 1.704 | 2.999 |
+| Bercatatan pemakaian | 83 | 141 |
+
+### Validasi
+
+`npm test` → **102 hijau** (tak ada tes yang dilonggarkan diam-diam: yang berubah hanya
+aturan definisi/contoh, dan penggantinya lebih spesifik). Pemeriksaan tambahan lewat skrip:
+0 lema ganda, 0 lema di luar alfabetnya, 0 kelas kata tak dikenal, tiap band tetap ≥4 entri.
+Render headless Chrome: Korea 167 baris dengan indeks jamo ㄱ–ㅎ, Thai 144 baris dengan ฝ
+kini muncul, halaman entri Thai `#/entry/th/ฝน` bersih, jalur & drill bersih — 0 error konsol.
+SW `jb-v3.0.0` → **`jb-v3.1.0`**.
+
+---
+
+*Diperbarui — v3.1 2026-07-28 (kamus digandakan: 1.704 → 3.359 entri; entri pendek diperkenalkan; perbaikan indeks Ł/Ø/Æ/Đ/ß dan huruf Thai ฝ).*

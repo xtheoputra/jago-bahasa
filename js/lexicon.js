@@ -97,29 +97,29 @@ export const BAND_INFO = {
    dictionary sizes without downloading a single entry. Kept in sync with the
    chunks by tests/lexicon.test.mjs. */
 export const LEXICONS = [
-  { id: "en", n: 96 },
-  { id: "es", n: 72 },
-  { id: "fr", n: 72 },
-  { id: "de", n: 72 },
-  { id: "ja", n: 72 },
-  { id: "ko", n: 96 },
-  { id: "zh", n: 72 },
-  { id: "ar", n: 72 },
-  { id: "it", n: 72 },
-  { id: "pt", n: 72 },
-  { id: "ru", n: 72 },
-  { id: "hi", n: 72 },
-  { id: "ms", n: 72 },
-  { id: "nl", n: 72 },
-  { id: "sv", n: 72 },
-  { id: "tr", n: 72 },
-  { id: "tl", n: 72 },
-  { id: "vi", n: 72 },
-  { id: "pl", n: 72 },
-  { id: "th", n: 72 },
-  { id: "el", n: 72 },
-  { id: "uk", n: 72 },
-  { id: "sw", n: 72 },
+  { id: "en", n: 168 },
+  { id: "es", n: 144 },
+  { id: "fr", n: 144 },
+  { id: "de", n: 144 },
+  { id: "ja", n: 144 },
+  { id: "ko", n: 167 },
+  { id: "zh", n: 144 },
+  { id: "ar", n: 144 },
+  { id: "it", n: 144 },
+  { id: "pt", n: 144 },
+  { id: "ru", n: 144 },
+  { id: "hi", n: 144 },
+  { id: "ms", n: 144 },
+  { id: "nl", n: 144 },
+  { id: "sv", n: 144 },
+  { id: "tr", n: 144 },
+  { id: "tl", n: 144 },
+  { id: "vi", n: 144 },
+  { id: "pl", n: 144 },
+  { id: "th", n: 144 },
+  { id: "el", n: 144 },
+  { id: "uk", n: 144 },
+  { id: "sw", n: 144 },
 ];
 
 export const lexiconMeta = (id) => LEXICONS.find((l) => l.id === id);
@@ -140,7 +140,7 @@ const ALPHABETS = {
   gre: "ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ".split(""),
   ara: "ابتثجحخدذرزسشصضطظعغفقكلمنهوي".split(""),
   dev: "अआइईउऊएऐओऔकखगघचछजझटठडढणतथदधनपफबभमयरलवशषसह".split(""),
-  tha: "กขคงจฉชซญดตถทธนบปผพฟภมยรลวศสหอฮ".split(""),
+  tha: "กขคงจฉชซญดตถทธนบปผฝพฟภมยรลวศสหอฮ".split(""),
   han: HANGUL_LEAD,
 };
 
@@ -206,7 +206,10 @@ function normalize(lang, raw, i) {
     cefr: raw.cefr,
     gen: raw.gen || "",
     g: tri(raw.g),
-    d: tri(raw.d),
+    /* A definition is optional: a transparent concrete noun ("door", "spoon")
+       is fully served by its gloss, exactly as printed dictionaries treat them.
+       Anything abstract, idiomatic or easily confused still carries one. */
+    d: raw.d ? tri(raw.d) : null,
     ex: raw.ex ? { t: raw.ex[0], m: tri(raw.ex.slice(1)) } : null,
     syn: raw.syn || [],
     ant: raw.ant || [],
@@ -216,7 +219,7 @@ function normalize(lang, raw, i) {
     key: `lex/${lang}/${raw.w}`,
   };
   e.letter = letterOf(lang, e.w, e.r);
-  e.hay = fold([e.w, e.r, e.ipa, e.g.id, e.g.en, e.g.es, e.d.id, e.d.en, e.d.es,
+  e.hay = fold([e.w, e.r, e.ipa, e.g.id, e.g.en, e.g.es, e.d && e.d.id, e.d && e.d.en, e.d && e.d.es,
     e.ex && e.ex.t, e.ex && e.ex.m.id, e.ex && e.ex.m.en, e.ex && e.ex.m.es,
     e.syn.join(" "), e.ant.join(" ")].filter(Boolean).join(" "));
   return e;

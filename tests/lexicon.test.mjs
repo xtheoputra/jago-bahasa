@@ -64,7 +64,10 @@ test("every entry is complete: headword, part of speech, band, gloss, definition
       assert.ok(POS.includes(e.pos), `${where}: unknown part of speech "${e.pos}"`);
       assert.ok(BANDS.includes(e.cefr), `${where}: unknown CEFR band "${e.cefr}"`);
       assert.ok(trilingual(e.g), `${where}: gloss not translated into id/en/es`);
-      assert.ok(trilingual(e.d), `${where}: definition not translated into id/en/es`);
+      // A definition is optional (a transparent concrete noun needs none) but
+      // must be complete when present — a half-translated one falls back to
+      // Indonesian for English and Spanish readers without saying so.
+      if (e.d) assert.ok(trilingual(e.d), `${where}: definition not translated into id/en/es`);
       if (e.ex) {
         assert.ok(typeof e.ex.t === "string" && e.ex.t.trim(), `${where}: empty example`);
         assert.ok(trilingual(e.ex.m), `${where}: example not translated into id/en/es`);
@@ -85,10 +88,15 @@ test("non-Latin dictionaries romanise every headword", () => {
   }
 });
 
-test("most entries carry an example sentence", () => {
+test("every dictionary keeps a solid core of worked entries", () => {
+  // Short gloss-only entries give the book its breadth; the worked entries —
+  // definition plus example — are what make it teachable. Both must be there.
   for (const book of books()) {
     const withEx = book.entries.filter((e) => e.ex).length;
-    assert.ok(withEx >= book.entries.length * 0.8, `${book.lang}: only ${withEx}/${book.entries.length} entries have an example`);
+    const withDef = book.entries.filter((e) => e.d).length;
+    assert.ok(withEx >= 60, `${book.lang}: only ${withEx} entries have an example`);
+    assert.ok(withDef >= 60, `${book.lang}: only ${withDef} entries have a definition`);
+    assert.ok(withEx >= book.entries.length * 0.4, `${book.lang}: only ${withEx}/${book.entries.length} entries have an example`);
   }
 });
 

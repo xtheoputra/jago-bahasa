@@ -10,7 +10,7 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 | | |
 |---|---|
 | 🌍 **23 bahasa dunia** | Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai, **Yunani**, **Ukraina**, **Swahili** |
-| 📖 **Kamus buku 23 bahasa** | **1.704 entri** bergaya kamus cetak: lafal (IPA/romanisasi), kelas kata, tingkat CEFR A1–C2, definisi & arti tiga bahasa, contoh kalimat, sinonim/lawan kata, catatan pemakaian, dan tautan silang ke pelajaran |
+| 📖 **Kamus buku 23 bahasa** | **3.359 entri** bergaya kamus cetak: lafal (IPA/romanisasi), kelas kata, tingkat CEFR A1–C2, arti tiga bahasa, tautan silang ke pelajaran — **1.704 di antaranya entri garapan penuh** dengan definisi, contoh kalimat, sinonim/lawan kata, dan catatan pemakaian |
 | 🔤 **Jelajah A–Z sesuai aksaranya** | Tiap kamus diindeks dengan alfabetnya sendiri: jamo Hangul (가나다순), huruf Kiril & Yunani, huruf dasar Arab, konsonan awal Thai, serta romaji/pinyin untuk Jepang & Mandarin |
 | 📐 **Panduan Bahasa** | Muka buku tiap bahasa: sistem tulisan, kunci pelafalan (138 baris), dan inti tata bahasa (115 butir) — semuanya trilingual |
 | 🧭 **Jalur Nol → Ahli** | Enam tahap CEFR per bahasa: pernyataan "yang bisa kamu lakukan", pelajaran tahap itu, kata kamus tahap itu, dan progres nyata dari data belajarmu |
@@ -29,7 +29,7 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 | 🔡 **Pelatih Aksara** | Kuasai hiragana, hangul, kiril (Rusia & Ukraina), abjad Arab, alfabet Yunani, & konsonan Thai |
 | 🌟 **Kata Hari Ini** | Satu kata pilihan per hari dari seluruh katalog — bisa didengarkan, dibintangi, & dibuka pelajarannya |
 | 🔎 **Filter Katalog** | Cari bahasa di halaman Katalog (cocok dengan nama lokal, Inggris, Spanyol, endonim, atau kode) |
-| 🔍 **Pencarian lintas bahasa** | Satu kotak cari menembus **5.267 lema** (3.563 kata pelajaran + 1.704 entri kamus) dengan saringan bahasa, tingkat, dan "hanya yang ada contoh" |
+| 🔍 **Pencarian lintas bahasa** | Satu kotak cari menembus **6.922 lema** (3.563 kata pelajaran + 3.359 entri kamus) dengan saringan bahasa, tingkat, dan "hanya yang ada contoh" |
 | 🔁 **Review SRS** | Pengulangan berjarak (SM-2) atas kata yang sudah dipelajari |
 | 🎯 **Target Harian** | Target XP harian yang bisa diatur (Santai/Normal/Serius) + cincin progres |
 | 🎲 **Campur Cepat** | 10 soal acak lintas kata yang sudah dipelajari, satu ketuk |
@@ -210,6 +210,7 @@ export default [
 ```
 
 - `w` lema · `r` romanisasi (**wajib** untuk aksara non-Latin) · `pos` kelas kata (`n`, `v`, `adj`… → label di i18n `pos.*`)
+- `d` (definisi) dan `ex` (contoh) **opsional**: kata benda konkret seperti "pintu" atau "sendok" cukup dengan arti pendek, persis seperti kamus cetak memperlakukannya. Kata abstrak, idiom, dan "teman palsu" tetap wajib digarap penuh — `npm test` menjaga tiap bahasa punya minimal 60 entri berdefinisi **dan** 60 entri bercontoh.
 - `cefr` A1–C2 menentukan tahap pada Jalur Nol → Ahli **dan** dek Latihan Kamus (**tiap band butuh ≥4 entri**)
 - `gen` penanda gender/kelas (`m`/`f`/`nt` diterjemahkan; nilai lain — `de`, `het`, `en`, `ett` — ditampilkan apa adanya)
 - Urutan A–Z dihitung sendiri oleh `lexicon.js` memakai alfabet bahasanya (jamo Hangul, Kiril, Arab, Thai, romaji/pinyin) — cukup tulis entrinya, urutannya otomatis.

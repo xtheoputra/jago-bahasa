@@ -147,7 +147,7 @@ function bookResultHTML(rec) {
         <span class="chip chip--brand">${esc(t("dict.book"))}</span>
       </div>
       ${entryRowHTML(e, c)}
-      <p class="dict-item__def">${esc(mean(e.d))}</p>
+      ${e.d ? `<p class="dict-item__def">${esc(mean(e.d))}</p>` : ""}
     </div>`;
 }
 
@@ -451,10 +451,11 @@ export function renderEntry(view, [lang, word]) {
 
       <p class="entry__gloss">${esc(mean(e.g))}</p>
 
+      ${e.d ? `
       <section class="entry__block">
         <h2>${esc(t("dict.def"))}</h2>
         <p>${esc(mean(e.d))}</p>
-      </section>
+      </section>` : ""}
 
       ${e.ex ? `
       <section class="entry__block">

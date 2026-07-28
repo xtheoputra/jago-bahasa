@@ -182,8 +182,8 @@ export function renderDrill(view, [lang, band], ctx) {
         </div>
         <div class="card quiz-q">
           <div class="ask">${esc(t("drill.prompt"))}</div>
-          <div class="drill-def">${esc(mean(q.e.d))}</div>
-          <div class="drill-gloss">${esc(mean(q.e.g))}</div>
+          <div class="drill-def">${esc(mean(q.e.d || q.e.g))}</div>
+          ${q.e.d ? `<div class="drill-gloss">${esc(mean(q.e.g))}</div>` : ""}
         </div>
         <div class="quiz-options">
           ${q.opts.map((o, k) => `<button class="quiz-opt ${c.cjk ? "cjk" : ""}" dir="${c.rtl ? "rtl" : "ltr"}" data-k="${k}">${esc(o.w)}</button>`).join("")}

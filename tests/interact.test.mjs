@@ -269,6 +269,160 @@ test("a passed stage is sealed on the path and printed on a certificate", opts, 
   assert.deepEqual(exceptions, [], `the certificate flow threw: ${exceptions.join(" | ")}`);
 });
 
+/* The search once waited behind every course and every dictionary — 46 chunks,
+   about 1.9 MB — before the search box existed at all. It now renders first
+   and widens as the books land, so the thing to prove is that a query typed
+   into a half-loaded page still finds words, and that the page says how far
+   along it is rather than silently returning too few results. */
+test("the search box works before all 23 dictionaries have landed", opts, async () => {
+  exceptions = [];
+  await send("Page.navigate", { url: BASE + "/#/search" });
+
+  // Poll from the instant navigation starts: the input must appear long
+  // before allEntries() is complete.
+  let sawInputAt = -1, sawFullAt = -1;
+  for (let i = 0; i < 400; i++) {
+    const now = i * 25;
+    if (sawInputAt < 0 && (await evalJS(`!!document.querySelector('#dictQ')`))) sawInputAt = now;
+    const n = await evalJS(
+      `(async () => { const m = await import('/js/lexicon.js'); return m.allEntries().length; })()`
+    );
+    if (n >= 3000) { sawFullAt = now; break; }
+    await sleep(25);
+  }
+  assert.ok(sawInputAt >= 0, "the search box never appeared at all");
+  assert.ok(sawFullAt >= 0, "the dictionaries never finished loading");
+  assert.ok(sawInputAt <= sawFullAt,
+    `the search box (${sawInputAt}ms) appeared after the last book (${sawFullAt}ms)`);
+
+  await sleep(2500);
+  // Once everything has landed the progress line must go away, not linger.
+  assert.equal(await evalJS(`document.querySelector('#dictLoading')?.hidden`), true,
+    "the loading line is still showing after every dictionary arrived");
+
+  // And the search itself still works across languages.
+  await evalJS(`(() => {
+    const el = document.querySelector('#dictQ');
+    el.value = 'water';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await sleep(900);
+  const hits = await evalJS(`document.querySelectorAll('#dictResults .dict-item').length`);
+  assert.ok(hits > 0, "a cross-language search for 'water' found nothing");
+  assert.deepEqual(exceptions, [], `the search threw: ${exceptions.join(" | ")}`);
+});
+
+/* Ten of the twenty-three courses have no voice on a stock Windows Chrome.
+   Asserting that against the host machine would make this test say different
+   things on different laptops, so the voice list is replaced with a known one
+   on every document — English only — and the app is asked what it does with a
+   language it cannot pronounce. */
+test("a language this device cannot pronounce says so, instead of playing nothing", opts, async () => {
+  exceptions = [];
+  const stub = await send("Page.addScriptToEvaluateOnNewDocument", {
+    source: `Object.defineProperty(speechSynthesis, 'getVoices',
+      { configurable: true, value: () => [{ lang: 'en-US', name: 'Stub English' }] });`,
+  });
+
+  const look = async (hash) => {
+    await send("Page.navigate", { url: BASE + hash });
+    await sleep(2600);
+    return JSON.parse(await evalJS(`(() => {
+      const all = [...document.querySelectorAll('.speakbtn, [data-needs-voice]')];
+      return JSON.stringify({
+        buttons: all.length,
+        muted: all.filter((b) => b.classList.contains('is-mute')).length,
+        empty: !!document.querySelector('.empty'),
+        named: (document.querySelector('[data-needs-voice]')?.getAttribute('aria-label') || ''),
+      });
+    })()`));
+  };
+
+  const arabic = await look("#/lesson/ar/greet");
+  assert.ok(arabic.buttons > 0, "the Arabic lesson rendered no audio buttons at all");
+  assert.equal(arabic.muted, arabic.buttons,
+    `${arabic.buttons - arabic.muted} Arabic audio buttons still promise sound this device cannot make`);
+  // A muted mode launcher must still say which mode it is.
+  assert.match(arabic.named, /Listen|Dengar|Escuchar/i,
+    `a muted launcher lost its own name: "${arabic.named}"`);
+
+  const english = await look("#/lesson/en/greet");
+  assert.ok(english.buttons > 0, "the English lesson rendered no audio buttons at all");
+  assert.equal(english.muted, 0, "English has a voice here, yet its buttons are marked mute");
+
+  // The three sound-only modes are unanswerable without a voice: no visual
+  // prompt exists to fall back on. They must refuse, not serve blank cards.
+  for (const mode of ["listen", "dictation", "audio"]) {
+    const dead = await look(`#/${mode}/ar/greet`);
+    assert.ok(dead.empty, `#/${mode}/ar serves a card whose question can never be heard`);
+    const alive = await look(`#/${mode}/en/greet`);
+    assert.ok(!alive.empty, `#/${mode}/en refused to run even though English has a voice`);
+  }
+
+  assert.deepEqual(exceptions, [], `the mute path threw: ${exceptions.join(" | ")}`);
+  await send("Page.removeScriptToEvaluateOnNewDocument", { identifier: stub.result.identifier });
+});
+
+/* The test above proves the app chrome is gone. It cannot prove the sheet is
+   *readable*, and looking at a real PDF showed it often was not: the install
+   prompt rode along on every print, and a learner in dark mode got a navy
+   block with near-black text on it — the three "can do" lines vanished
+   entirely — the moment "background graphics" was ticked. Paper has no theme,
+   so the printed certificate must come out identical either way. */
+test("the certificate prints the same sheet whether the screen is dark or light", opts, async () => {
+  exceptions = [];
+  await evalJS(`localStorage.setItem('jb.progress.v1::guest', JSON.stringify({
+    xp: 400, exams: { 'es/B2': { best: 91, passed: true, at: '2026-07-28', tries: 1 } }
+  }))`);
+
+  /** What the sheet looks like on paper for one screen theme. */
+  async function sheet(theme) {
+    await evalJS(`localStorage.setItem('jb.theme', ${JSON.stringify(theme)})`);
+    await send("Page.navigate", { url: BASE + "/#/cert/es" });
+    await sleep(400);
+    await send("Page.reload", { ignoreCache: true });
+    await sleep(3000);
+    await send("Emulation.setEmulatedMedia", { media: "print" });
+    const ink = await evalJS(`(() => {
+      const of = (s) => {
+        const el = document.querySelector(s);
+        if (!el) return s + ':missing';
+        const cs = getComputedStyle(el);
+        return s + ':' + cs.color + '|' + cs.backgroundColor;
+      };
+      return [of('.cert'), of('.cert__inner'), of('.cert__name'), of('.cert .chip--band'),
+              of('.cert__can li'), of('.cert__meta strong'), of('.cert__foot')].join(' ');
+    })()`);
+    const fab = await evalJS(
+      `(() => { const el = document.querySelector('.install-fab');
+                return !!el && el.getClientRects().length > 0; })()`
+    );
+    await send("Emulation.setEmulatedMedia", { media: "" });
+    // printBackground mimics the "background graphics" box a learner ticks to
+    // get a nicer-looking certificate — the setting that exposed the bug.
+    const pdf = await send("Page.printToPDF", {
+      printBackground: true, paperWidth: 8.27, paperHeight: 11.69,
+      marginTop: 0.4, marginBottom: 0.4, marginLeft: 0.4, marginRight: 0.4,
+    });
+    const raw = Buffer.from(pdf.result?.data || "", "base64").toString("latin1");
+    return { ink, fab, pages: (raw.match(/\/Type\s*\/Page[^s]/g) || []).length };
+  }
+
+  const light = await sheet("light");
+  const dark = await sheet("dark");
+
+  assert.ok(!light.fab && !dark.fab, "the install prompt is printed onto the certificate");
+  assert.equal(dark.ink, light.ink,
+    `dark mode prints a different certificate than light mode:\n  light ${light.ink}\n  dark  ${dark.ink}`);
+  assert.ok(light.ink.includes(".cert:rgb(17, 17, 17)|rgb(255, 255, 255)"),
+    `the certificate does not print as dark ink on white paper: ${light.ink}`);
+  assert.equal(light.pages, 1, `a certificate should be one sheet, this came out as ${light.pages}`);
+  assert.equal(dark.pages, 1, `in dark mode the certificate spills onto ${dark.pages} sheets`);
+  assert.deepEqual(exceptions, [], `printing threw: ${exceptions.join(" | ")}`);
+
+  await evalJS(`localStorage.removeItem('jb.theme')`);
+});
+
 test("a dictionary drill schedules the words it actually asked about", opts, async () => {
   exceptions = [];
   await evalJS(`localStorage.removeItem('jb.progress.v1::guest')`);

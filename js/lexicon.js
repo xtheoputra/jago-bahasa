@@ -98,8 +98,8 @@ export const BAND_INFO = {
    chunks by tests/lexicon.test.mjs. */
 export const LEXICONS = [
   { id: "en", n: 168 },
-  { id: "es", n: 144 },
-  { id: "fr", n: 144 },
+  { id: "es", n: 168 },
+  { id: "fr", n: 168 },
   { id: "de", n: 144 },
   { id: "ja", n: 144 },
   { id: "ko", n: 167 },

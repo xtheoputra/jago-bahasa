@@ -139,8 +139,15 @@ test("a dialogue lesson renders chat bubbles and hides typing modes", opts, () =
   assert.ok(!dom.includes('id="goType"'), "typing must be hidden for dialogue lessons");
 });
 
+/* English on purpose, and it has to stay a language the host can pronounce.
+   Dictation has no visual prompt at all, so it now refuses to run when the
+   device holds no voice for the language — and a stock Windows Chrome holds
+   none for ten of the twenty-three courses, Ukrainian among them. English is
+   the one voice every speech engine ships, and a machine with no voices at
+   all (a bare CI box) reports an empty list, which counts as available. Both
+   ends render; anything in between is a regression worth failing on. */
 test("the dictation mode renders its audio-only prompt", opts, () => {
-  const dom = expectRoute("#/dictation/uk/greet", ['id="dicPlay"', 'id="dicInput"', 'id="dicSlow"']);
+  const dom = expectRoute("#/dictation/en/greet", ['id="dicPlay"', 'id="dicInput"', 'id="dicSlow"']);
   assert.ok(!dom.includes("dictation-term"), "dictation must not show the written term up front");
 });
 

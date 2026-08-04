@@ -20,7 +20,7 @@ import { shuffle } from "../core/random.js";
 import * as store from "../core/state.js";
 import { COURSES, findCourse } from "../data.js";
 import { BANDS, BAND_INFO, BAND_LEVEL, getLexicon, lexiconSize } from "../lexicon.js";
-import { examCandidates, MIN_POOL } from "../core/exam.js";
+import { examCandidates, MIN_POOL, FINAL_MIN_BANDS } from "../core/exam.js";
 import { navigate } from "../core/router.js";
 import { notFound } from "./partials.js";
 import { I18N } from "../i18n.js";
@@ -142,6 +142,11 @@ export function renderPath(view, [lang]) {
 
     <div class="path-links">
       ${store.certifiedBand(c.id) ? `<a class="btn btn--sm" href="#/cert/${esc(c.id)}">📜 ${esc(t("cert.open"))}</a>` : ""}
+      ${/* Only offered once there is more than one stage to combine — below
+            that it would just be the stage exam wearing a different hat. */
+        store.certifiedBands(c.id).length >= FINAL_MIN_BANDS
+          ? `<a class="btn btn--sm btn--accent" href="#/exam/${esc(c.id)}/${esc(store.FINAL_BAND)}">🏆 ${esc(t("final.go"))}${store.finalPassed(c.id) ? " ✓" : ""}</a>`
+          : ""}
       <a class="btn btn--ghost btn--sm" href="#/dict/${esc(c.id)}">📖 ${esc(t("dict.open"))}</a>
       <a class="btn btn--ghost btn--sm" href="#/guide/${esc(c.id)}">📐 ${esc(t("guide.title"))}</a>
       <a class="btn btn--ghost btn--sm" href="#/course/${esc(c.id)}">📚 ${esc(t("course.lessons"))}</a>

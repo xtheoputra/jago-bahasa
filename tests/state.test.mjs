@@ -285,3 +285,120 @@ test("levels follow the 200-XP ladder", () => {
   assert.equal(store.levelFromXp(200), 2);
   assert.equal(store.xpIntoLevel(250), 50);
 });
+
+/* ------------------------------------------------------------ word lists */
+
+test("a list is created, named, filled and emptied", () => {
+  store.reset();
+  const id = store.listCreate("  Bekal   ke  Madrid  ");
+  assert.ok(id, "no list was created");
+  assert.equal(store.listGet(id).name, "Bekal ke Madrid", "whitespace was not tidied");
+
+  assert.equal(store.listToggle(id, "es/greet#0"), true, "adding a word did not stick");
+  assert.equal(store.listHas(id, "es/greet#0"), true);
+  assert.equal(store.listToggle(id, "es/greet#0"), false, "toggling again did not remove it");
+  assert.equal(store.listHas(id, "es/greet#0"), false);
+
+  assert.equal(store.listRename(id, "Madrid"), true);
+  assert.equal(store.listGet(id).name, "Madrid");
+  assert.equal(store.listRename(id, "   "), false, "a blank name must be refused");
+  assert.equal(store.listGet(id).name, "Madrid", "and must not clobber the old one");
+
+  assert.equal(store.listDelete(id), true);
+  assert.equal(store.listGet(id), null);
+  assert.equal(store.listDelete(id), false, "deleting twice must not report success");
+  store.reset();
+});
+
+test("a list refuses a nameless creation and stops at the ceiling", () => {
+  store.reset();
+  assert.equal(store.listCreate(""), null);
+  assert.equal(store.listCreate("   "), null);
+  for (let i = 0; i < store.LIST_MAX; i++) {
+    assert.ok(store.listCreate(`list ${i}`), `list ${i} was refused early`);
+  }
+  assert.equal(store.listCount(), store.LIST_MAX);
+  assert.equal(store.listCreate("one too many"), null);
+  store.reset();
+});
+
+test("lists made in the same millisecond do not collide, on one device or two", () => {
+  /* The merge keys on the list id, so uniqueness has to hold across devices,
+     not just within one bucket. An id built from the clock alone fails that:
+     two phones making a list in the same second land on the same id and one
+     collection quietly absorbs the other. */
+  store.reset();
+  const here = new Set();
+  for (let i = 0; i < 30; i++) here.add(store.listCreate(`l${i}`));
+  assert.equal(here.size, 30, "ids collided on one device");
+
+  // A second device, starting from empty at the same moment.
+  store.reset();
+  const there = new Set();
+  for (let i = 0; i < 30; i++) there.add(store.listCreate(`l${i}`));
+  const shared = [...there].filter((id) => here.has(id));
+  assert.deepEqual(shared, [], `two devices generated the same id: ${shared.join(", ")}`);
+  store.reset();
+});
+
+test("a name is capped rather than left to run off the card", () => {
+  store.reset();
+  const id = store.listCreate("x".repeat(500));
+  assert.equal(store.listGet(id).name.length, store.LIST_NAME_MAX);
+  store.reset();
+});
+
+test("a list knows which languages it needs before it can be drawn", () => {
+  store.reset();
+  const id = store.listCreate("mixed");
+  store.listToggle(id, "es/greet#0");
+  store.listToggle(id, "lex/ja/水");
+  store.listToggle(id, "lex/uk/вода");
+  assert.deepEqual(store.listLangs(id).sort(), ["es", "ja", "uk"]);
+  // A headword containing a slash must not be read as a language boundary.
+  assert.equal(store.langOfCardKey("lex/en/black/white"), "en");
+  store.reset();
+});
+
+test("merging two devices keeps every list and every word in them", () => {
+  store.reset();
+  const shared = store.listCreate("shared");
+  store.listToggle(shared, "es/greet#0");
+  const onlyHere = store.listCreate("laptop only");
+  store.listToggle(onlyHere, "fr/greet#1");
+  const backup = store.exportData();
+
+  store.reset();
+  const sameName = store.listCreate("shared");
+  store.listToggle(sameName, "es/greet#0");
+  const phoneOnly = store.listCreate("phone only");
+  store.listToggle(phoneOnly, "de/greet#2");
+
+  assert.equal(store.importData(backup).ok, true);
+  const names = store.listAll().map((l) => l.name);
+  assert.ok(names.includes("laptop only"), `the imported list vanished: ${names.join(", ")}`);
+  assert.ok(names.includes("phone only"), `the local list was overwritten: ${names.join(", ")}`);
+  const everyKey = store.listAll().flatMap((l) => Object.keys(store.listGet(l.id).keys));
+  for (const k of ["es/greet#0", "fr/greet#1", "de/greet#2"]) {
+    assert.ok(everyKey.includes(k), `${k} was lost in the merge`);
+  }
+  store.reset();
+});
+
+test("one list edited on two devices gains words instead of losing them", () => {
+  store.reset();
+  const id = store.listCreate("trip");
+  store.listToggle(id, "es/greet#0");
+  const bundle = JSON.parse(store.exportData());
+  const fromPhone = bundle.progress;
+  fromPhone.lists[id].keys["es/greet#5"] = true; // the phone added one more
+  delete fromPhone.lists[id].keys["es/greet#0"]; // and never saw the first
+
+  assert.equal(store.importData(JSON.stringify(bundle)).ok, true);
+  assert.deepEqual(
+    Object.keys(store.listGet(id).keys).sort(),
+    ["es/greet#0", "es/greet#5"],
+    "a merge must union the two sides, never pick one and drop the other"
+  );
+  store.reset();
+});

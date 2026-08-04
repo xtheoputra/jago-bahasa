@@ -14,7 +14,7 @@ import { toast, confetti, liveStatus } from "../core/ui.js";
 import * as store from "../core/state.js";
 import { COURSES, findCourse } from "../data.js";
 import { BANDS, BAND_INFO, getLexicon } from "../lexicon.js";
-import { buildExam, PASS_PCT, EXAM_QUESTIONS } from "../core/exam.js";
+import { buildExam, buildFinalExam, PASS_PCT, EXAM_QUESTIONS, FINAL_QUESTIONS } from "../core/exam.js";
 import { navigate } from "../core/router.js";
 import { session } from "../auth/session.js";
 import { notFound } from "./partials.js";
@@ -29,14 +29,26 @@ const tri = (a) => (Array.isArray(a) ? a[["id", "en", "es"].indexOf(I18N.current
 export function renderExam(view, [lang, band], ctx) {
   const c = findCourse(lang);
   const book = getLexicon(lang);
-  if (!c || !BANDS.includes(band)) return notFound(view);
+  /* `#/exam/:lang/final` is the comprehensive paper: same room, same rules,
+     same result screen — it only differs in where the questions come from and
+     in what a pass is called afterwards. */
+  const isFinal = band === store.FINAL_BAND;
+  if (!c || !(isFinal || BANDS.includes(band))) return notFound(view);
 
-  const paper = buildExam(c, book, band, EXAM_QUESTIONS);
+  const paper = isFinal
+    ? buildFinalExam(c, book, store.certifiedBands(c.id), FINAL_QUESTIONS)
+    : buildExam(c, book, band, EXAM_QUESTIONS);
   if (!paper) {
-    view.innerHTML = `<div class="empty"><div class="emoji">🎓</div><h2>${esc(t("exam.empty"))}</h2>
+    view.innerHTML = `<div class="empty"><div class="emoji">${isFinal ? "🏆" : "🎓"}</div>
+      <h2>${esc(t(isFinal ? "final.empty" : "exam.empty"))}</h2>
       <a class="btn" href="#/path/${esc(c.id)}" style="margin-top:12px">${esc(t("path.cta"))}</a></div>`;
     return;
   }
+
+  /** What the paper calls itself in the corner of every question. */
+  const badge = isFinal
+    ? `<span class="chip chip--final">🏆 ${esc(t("final.chip"))}</span>`
+    : `<span class="chip chip--band chip--band-${esc(band)}">${esc(band)}</span>`;
 
   const signal = ctx && ctx.signal;
   let qi = 0,
@@ -57,7 +69,7 @@ export function renderExam(view, [lang, band], ctx) {
       <div class="quiz-wrap">
         <div class="quiz-top">
           <div class="progress" aria-hidden="true"><i style="width:${(qi / paper.length) * 100}%"></i></div>
-          <span class="chip chip--band chip--band-${esc(band)}">${esc(band)}</span>
+          ${badge}
           <span class="chip">${qi + 1} ${esc(t("quiz.of"))} ${paper.length}</span>
         </div>
         <div class="card quiz-q exam-q">
@@ -112,6 +124,14 @@ export function renderExam(view, [lang, band], ctx) {
     if (res.gain) toast(t("toast.lessonDone", res.gain));
     const circ = 2 * Math.PI * 54;
     const info = BAND_INFO[band];
+    /* The comprehensive paper certifies no single band, so its verdict names
+       the span it covered instead of a rung on the ladder. */
+    const covered = store.certifiedBands(c.id);
+    const verdict = res.passed
+      ? isFinal
+        ? t("final.verdictPass", covered.join(" · "))
+        : t("exam.verdictPass", `${band} — ${tri(info.name)}`)
+      : t(isFinal ? "final.verdictFail" : "exam.verdictFail");
 
     view.innerHTML = `
       <div class="quiz-wrap">
@@ -123,12 +143,12 @@ export function renderExam(view, [lang, band], ctx) {
             <defs><linearGradient id="eg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#ff9f43"/></linearGradient></defs>
             <text x="60" y="68" text-anchor="middle" font-size="26" font-weight="800" fill="var(--text)">${pct}%</text>
           </svg>
-          <h2>${res.passed ? `🎓 ${esc(t("exam.passed"))}` : esc(t("exam.failed"))}</h2>
+          <h2>${res.passed
+            ? `${isFinal ? "🏆" : "🎓"} ${esc(t(isFinal ? "final.passed" : "exam.passed"))}`
+            : esc(t("exam.failed"))}</h2>
           <div class="scoreline">${score} / ${paper.length} ${esc(t("quiz.correct"))} · ${esc(t("exam.passMark", PASS_PCT))}</div>
           ${res.gain ? `<div class="xp-pop">+${res.gain} XP⭐</div>` : ""}
-          <p class="exam-verdict">${esc(res.passed
-            ? t("exam.verdictPass", `${band} — ${tri(info.name)}`)
-            : t("exam.verdictFail"))}</p>
+          <p class="exam-verdict">${esc(verdict)}</p>
 
           ${wrong.length ? `
           <div class="exam-review">
@@ -145,7 +165,9 @@ export function renderExam(view, [lang, band], ctx) {
           <div class="practice-bar" style="justify-content:center;margin-top:18px;flex-wrap:wrap">
             ${res.passed ? `<a class="btn" href="#/cert/${esc(c.id)}">📜 ${esc(t("cert.open"))}</a>` : ""}
             <button class="btn btn--ghost" id="eretry">↻ ${esc(t("exam.retry"))}</button>
-            ${res.passed ? "" : `<a class="btn btn--ghost btn--sm" href="#/drill/${esc(c.id)}/${esc(band)}">📖 ${esc(t("drill.go"))}</a>`}
+            ${res.passed ? "" : isFinal
+              ? `<a class="btn btn--ghost btn--sm" href="#/mistakes">🩹 ${esc(t("mistakes.title"))}</a>`
+              : `<a class="btn btn--ghost btn--sm" href="#/drill/${esc(c.id)}/${esc(band)}">📖 ${esc(t("drill.go"))}</a>`}
             <button class="btn ${res.passed ? "btn--ghost" : ""}" id="eback">${esc(t("path.cta"))}</button>
           </div>
         </div>
@@ -191,6 +213,10 @@ export function renderCertificate(view, [lang]) {
         <p class="cert__for">${esc(t("cert.for"))}</p>
         <p class="cert__band"><span class="chip chip--band chip--band-${esc(top)}">${esc(top)}</span> ${esc(tri(info.name))}</p>
         <ul class="cert__can">${info.can.map((k) => `<li>${esc(tri(k))}</li>`).join("")}</ul>
+        ${/* A stage certificate says where you got to. The comprehensive pass
+              says the rungs below you are all still there. */
+          store.finalPassed(c.id)
+            ? `<p class="cert__final">🏆 ${esc(t("final.onCert"))}</p>` : ""}
         <div class="cert__meta">
           <div><small>${esc(t("cert.stages"))}</small><strong>${bands.map(esc).join(" · ")}</strong></div>
           <div><small>${esc(t("cert.best"))}</small><strong>${rec.best || 0}%</strong></div>

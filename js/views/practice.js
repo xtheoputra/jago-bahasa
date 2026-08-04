@@ -4,7 +4,7 @@
    automatically on navigation (no listener stacking).
    ========================================================================= */
 import { $, $$, esc, mean } from "../core/dom.js";
-import { confetti, toast, speak, stopSpeak, liveStatus } from "../core/ui.js";
+import { confetti, toast, speak, stopSpeak, liveStatus, hasVoice } from "../core/ui.js";
 import { findScript } from "../scripts.js";
 import { shuffle } from "../core/random.js";
 import * as store from "../core/state.js";
@@ -500,6 +500,19 @@ function emptyState(emoji, msg, href, label) {
   return `<div class="empty"><div class="emoji">${emoji}</div><p>${esc(msg)}</p><a class="btn" href="${href}" style="margin-top:12px">${esc(label)}</a></div>`;
 }
 
+/** Three modes — Listen, Dictation and Audio — have no visual prompt at all:
+ *  the question *is* the sound. On a device with no voice for the language
+ *  (roughly half of the catalogue on a stock Windows install) they are not
+ *  merely degraded, they are unanswerable. Say so, the way the Speak mode
+ *  already does when there is no microphone, rather than serving blank cards. */
+function needsVoice(view, course, back) {
+  if (hasVoice(course.speech)) return false;
+  view.innerHTML =
+    `<nav class="crumb"><a href="${back}">‹ ${esc(t("cloze.back"))}</a></nav>` +
+    emptyState("🔇", t("tts.modeNeedsVoice"), back, t("cloze.back"));
+  return true;
+}
+
 /** Ring result screen shared by type / listen / mix / mistakes sessions. */
 function sessionResult(view, score, total, backHash, backLabel, onRetry) {
   const pct = total ? Math.round((score / total) * 100) : 0;
@@ -743,8 +756,9 @@ export function renderListen(view, [cid, lid], ctx) {
   const c = findCourse(cid);
   const l = findLesson(c, lid);
   if (!c || !l) return notFound(view);
-  const deck = l.items.map((it, i) => ({ c, it, key: `${c.id}/${l.id}#${i}` }));
   const back = `#/lesson/${c.id}/${l.id}`;
+  if (needsVoice(view, c, back)) return;
+  const deck = l.items.map((it, i) => ({ c, it, key: `${c.id}/${l.id}#${i}` }));
   mcSession(view, deck, ctx, {
     audioOnly: true,
     ask: t("listen.prompt"),
@@ -768,6 +782,7 @@ export function renderDictation(view, [cid, lid], ctx) {
   const l = findLesson(c, lid);
   if (!c || !l) return notFound(view);
   const back = `#/lesson/${c.id}/${l.id}`;
+  if (needsVoice(view, c, back)) return;
   const deck = shuffle(l.items.map((it, i) => ({ it, key: `${c.id}/${l.id}#${i}` })));
   const signal = ctx && ctx.signal;
   const SLOW = 0.6;
@@ -1163,6 +1178,7 @@ export function renderAudio(view, [cid, lid], ctx) {
   const l = findLesson(c, lid);
   if (!c || !l) return notFound(view);
   const back = `#/lesson/${c.id}/${l.id}`;
+  if (needsVoice(view, c, back)) return;
   const items = l.items;
   const signal = ctx && ctx.signal;
   const RATES = [0.7, 0.9, 1.1];
@@ -1437,6 +1453,60 @@ export function renderScript(view, [sid], ctx) {
 /* =====================================================================
    FAVORITES — multiple-choice review over your starred words.
    ===================================================================== */
+/* --------------------------------------------------------- own word lists
+   A list is a named favourites bag, so it plays exactly the way the
+   Favourites deck does — through resolveCard() into the shared pool shape.
+   That is also why only the pool-based modes are offered for a list:
+   flashcards and Match are built around one language's script and writing
+   direction, and a list can hold all twenty-three at once. */
+function listSession(view, id, ctx, opts) {
+  const list = store.listGet(id);
+  if (!list) return notFound(view);
+  const pool = store.listPool(id);
+  const back = `#/list/${id}`;
+  if (pool.length < 4) {
+    view.innerHTML = emptyState("🗂️", t("lists.needFour"), back, t("lists.title"));
+    return;
+  }
+  mcSession(view, pool, ctx, {
+    ask: t("quiz.q"),
+    backHash: back,
+    backLabel: list.name,
+    mode: "list",
+    ...opts,
+  });
+}
+
+export function renderListQuiz(view, [id], ctx) {
+  listSession(view, id, ctx, { counter: "listed", onRetry: () => renderListQuiz(view, [id], ctx) });
+}
+
+export function renderListListen(view, [id], ctx) {
+  /* Every word in the list is drawn from its own course, so the voice check
+     is per card, not per list: a list mixing Spanish and Thai on a device
+     with only a Spanish voice can still be drilled — on the Spanish half. */
+  const list = store.listGet(id);
+  if (!list) return notFound(view);
+  const back = `#/list/${id}`;
+  const speakable = store.listPool(id).filter((card) => hasVoice(card.c.speech));
+  if (speakable.length < 4) {
+    view.innerHTML =
+      `<nav class="crumb"><a href="${back}">‹ ${esc(list.name)}</a></nav>` +
+      emptyState("🔇", t("tts.modeNeedsVoice"), back, t("lists.title"));
+    return;
+  }
+  mcSession(view, speakable, ctx, {
+    audioOnly: true,
+    ask: t("listen.prompt"),
+    title: t("listen.title"),
+    backHash: back,
+    backLabel: list.name,
+    counter: "listened",
+    mode: "listen",
+    onRetry: () => renderListListen(view, [id], ctx),
+  });
+}
+
 export function renderFavorites(view, _params, ctx) {
   const pool = store.favPool();
   if (!pool.length) {

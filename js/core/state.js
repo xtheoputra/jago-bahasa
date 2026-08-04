@@ -7,6 +7,7 @@
 import { COURSES, courseLoaded } from "../data.js";
 import { BANDS, getLexicon, lexiconLoaded, lexiconMeta, dictLesson, dictItem } from "../lexicon.js";
 import { PASS_PCT } from "./exam.js";
+import { randInt } from "./random.js";
 
 const KEY_BASE = "jb.progress.v1";
 const nsKey = (uid) => `${KEY_BASE}::${uid || "guest"}`;
@@ -37,6 +38,7 @@ export function defaultState() {
     xpHistory: {}, // "YYYY-MM-DD": xp earned that day (for the trend chart)
     tally: {}, // per-mode { tries, ok } for accuracy insights
     exams: {}, // "<lang>/<band>": { best, passed, at, tries } — stage certificates
+    lists: {}, // "<listId>": { name, at, keys: { <cardKey>: true } } — own word lists
     reminder: { enabled: false, time: "19:00" }, // local study reminder
     updatedAt: 0,
   };
@@ -350,6 +352,11 @@ export function srsReviewed(n) {
    The record keeps the best score ever seen, so a later shaky attempt can
    never take a certificate back — and `at` is the date it was first earned,
    which is what the certificate prints. */
+/** The comprehensive paper's slot in `exams`. Deliberately not one of BANDS,
+ *  so `certifiedBands` — which filters the six real bands — never mistakes it
+ *  for a stage, while every other exam mechanism works on it unchanged. */
+export const FINAL_BAND = "final";
+
 export function recordExam(lang, band, pct) {
   const key = `${lang}/${band}`;
   state.exams = state.exams || {};
@@ -363,8 +370,9 @@ export function recordExam(lang, band, pct) {
     tries: (prev.tries || 0) + 1,
   };
   // Earning a stage is worth far more than drilling it — but only once, so the
-  // certificate cannot be farmed by re-sitting a paper you already passed.
-  const gain = first ? 80 : passed ? 10 : 0;
+  // certificate cannot be farmed by re-sitting a paper you already passed. The
+  // comprehensive paper spans every band below it, and pays accordingly.
+  const gain = first ? (band === FINAL_BAND ? 200 : 80) : passed ? 10 : 0;
   if (gain) award(gain);
   if (first) {
     state.counters = state.counters || {};
@@ -381,6 +389,8 @@ export function examsPassed() {
 }
 /** Every band certified in a language, lowest first — the certificate's body. */
 export const certifiedBands = (lang) => BANDS.filter((b) => examPassed(lang, b));
+/** Has the comprehensive paper been passed for this language? */
+export const finalPassed = (lang) => examPassed(lang, FINAL_BAND);
 /** The highest band certified in a language, or null — the certificate's title. */
 export function certifiedBand(lang) {
   const all = certifiedBands(lang);
@@ -533,6 +543,115 @@ export function favPool() {
   return poolFrom(state.favorites || {});
 }
 
+/* ------------------------------------------------------------ word lists
+   Favourites is one bag with no name. A learner preparing for a trip, a exam
+   or a particular chapter wants several, each called something — so a list is
+   exactly a named favourites bag, holding the same two key namespaces and
+   resolved through the same resolveCard(). Nothing else has to learn a new
+   shape: a list's cards play in every practice mode as they are. */
+
+/** Longest a list name may be — enough to be descriptive, short enough to fit
+ *  on a chip without truncation doing the describing instead. */
+export const LIST_NAME_MAX = 40;
+/** Ceiling on how many lists one learner keeps, so the picker stays scannable. */
+export const LIST_MAX = 50;
+
+const lists = () => (state.lists = state.lists || {});
+const cleanName = (name) => String(name || "").trim().replace(/\s+/g, " ").slice(0, LIST_NAME_MAX);
+
+/** A list id has to be unique across *devices*, not just within one bucket:
+ *  the merge keys on it, so two phones creating a list in the same second and
+ *  landing on the same id would silently fold two different collections into
+ *  one. A timestamp alone does exactly that, so it carries 48 bits of
+ *  crypto-grade randomness behind it; the timestamp is kept only because it
+ *  makes ids sort roughly by age when read by a human. */
+function newListId() {
+  const taken = lists();
+  let id;
+  do {
+    let tail = "";
+    while (tail.length < 10) tail += randInt(36).toString(36);
+    id = `l${Date.now().toString(36)}${tail}`;
+  } while (taken[id]);
+  return id;
+}
+
+/** Every list, newest first, with the size the UI shows. */
+export function listAll() {
+  return Object.entries(lists())
+    .map(([id, l]) => ({ id, name: l.name, at: l.at || "", count: Object.keys(l.keys || {}).length }))
+    .sort((a, b) => (b.at || "").localeCompare(a.at || "") || a.name.localeCompare(b.name));
+}
+export const listGet = (id) => lists()[id] || null;
+export const listCount = () => Object.keys(lists()).length;
+
+/** Create a list. Returns its id, or null when the name is empty or the
+ *  ceiling is reached — the caller decides how to say so. */
+export function listCreate(name) {
+  const clean = cleanName(name);
+  if (!clean || listCount() >= LIST_MAX) return null;
+  const id = newListId();
+  lists()[id] = { name: clean, at: todayISO(), keys: {} };
+  persist();
+  return id;
+}
+
+export function listRename(id, name) {
+  const l = listGet(id);
+  const clean = cleanName(name);
+  if (!l || !clean) return false;
+  l.name = clean;
+  persist();
+  return true;
+}
+
+export function listDelete(id) {
+  if (!lists()[id]) return false;
+  delete lists()[id];
+  persist();
+  return true;
+}
+
+/** Add or remove one word. Returns whether the word is now in the list. */
+export function listToggle(id, key) {
+  const l = listGet(id);
+  if (!l || !key) return false;
+  l.keys = l.keys || {};
+  const now = !l.keys[key];
+  if (now) l.keys[key] = true;
+  else delete l.keys[key];
+  persist();
+  return now;
+}
+
+export const listHas = (id, key) => !!(listGet(id) || { keys: {} }).keys[key];
+/** Which lists a word is already in — what the picker ticks on open. */
+export const listsWith = (key) => Object.keys(lists()).filter((id) => listHas(id, key));
+
+/** A list as playable cards. Same rule as favPool(): a chunk still on the way
+ *  is skipped, never pruned. */
+export function listPool(id) {
+  const l = listGet(id);
+  return l ? poolFrom((l.keys = l.keys || {})) : [];
+}
+
+/** Which language a card key belongs to, in either namespace. Lists span
+ *  languages, so their views have to know which chunks to fetch. */
+export function langOfCardKey(key) {
+  if (isLexKey(key)) {
+    const cut = String(key).indexOf("/", 4);
+    return cut < 0 ? null : key.slice(4, cut);
+  }
+  return String(key).split("/")[0] || null;
+}
+
+/** Every language a list draws on — the chunks its view has to wait for. */
+export function listLangs(id) {
+  const l = listGet(id);
+  if (!l) return [];
+  return [...new Set(Object.keys(l.keys || {}).map(langOfCardKey).filter(Boolean))];
+}
+
 /* ------------------------------------------------- accuracy tally per mode */
 export function recordAttempt(mode, ok) {
   state.tally = state.tally || {};
@@ -667,6 +786,25 @@ function mergeInto(target, src) {
       passed: !!(a.passed || b.passed),
       at: a.at || b.at || null,
       tries: Math.max(a.tries || 0, b.tries || 0),
+    };
+  }
+  /* Word lists merge per list: a list this device has never seen arrives
+     whole, and one it already has gains the other device's words rather than
+     being overwritten by whichever save happened to be later. Removing a word
+     on one device and adding it on another resolves as "kept" — a merge must
+     never be the thing that quietly empties a list somebody built. */
+  target.lists = target.lists || {};
+  for (const [id, incoming] of Object.entries(src.lists || {})) {
+    if (!incoming || typeof incoming !== "object") continue;
+    const mine = target.lists[id];
+    if (!mine) {
+      target.lists[id] = { name: incoming.name || "", at: incoming.at || "", keys: { ...(incoming.keys || {}) } };
+      continue;
+    }
+    target.lists[id] = {
+      name: mine.name || incoming.name || "",
+      at: mine.at && incoming.at ? (mine.at < incoming.at ? mine.at : incoming.at) : mine.at || incoming.at || "",
+      keys: Object.assign({}, incoming.keys || {}, mine.keys || {}),
     };
   }
   if (src.reminder && !target.reminder) target.reminder = src.reminder;

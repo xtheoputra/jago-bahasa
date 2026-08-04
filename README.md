@@ -10,12 +10,15 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 | | |
 |---|---|
 | 🌍 **23 bahasa dunia** | Inggris, Spanyol, Prancis, Jerman, Jepang, Korea, Mandarin, Arab, Italia, Portugis, Rusia, Hindi, Melayu, Belanda, Swedia, Turki, Tagalog, Vietnam, Polandia, Thai, **Yunani**, **Ukraina**, **Swahili** |
-| 📖 **Kamus buku 23 bahasa** | **3.359 entri** bergaya kamus cetak: lafal (IPA/romanisasi), kelas kata, tingkat CEFR A1–C2, arti tiga bahasa, tautan silang ke pelajaran — **1.704 di antaranya entri garapan penuh** dengan definisi, contoh kalimat, sinonim/lawan kata, dan catatan pemakaian |
+| 📖 **Kamus buku 23 bahasa** | **3.407 entri** bergaya kamus cetak: lafal (IPA/romanisasi), kelas kata, tingkat CEFR A1–C2, arti tiga bahasa, tautan silang ke pelajaran — **1.704 di antaranya entri garapan penuh** dengan definisi, contoh kalimat, sinonim/lawan kata, dan catatan pemakaian |
 | 🔤 **Jelajah A–Z sesuai aksaranya** | Tiap kamus diindeks dengan alfabetnya sendiri: jamo Hangul (가나다순), huruf Kiril & Yunani, huruf dasar Arab, konsonan awal Thai, serta romaji/pinyin untuk Jepang & Mandarin |
 | 📐 **Panduan Bahasa** | Muka buku tiap bahasa: sistem tulisan, kunci pelafalan (138 baris), dan inti tata bahasa (115 butir) — semuanya trilingual |
 | 🧭 **Jalur Nol → Ahli** | Enam tahap CEFR per bahasa: pernyataan "yang bisa kamu lakukan", pelajaran tahap itu, kata kamus tahap itu, dan progres nyata dari data belajarmu |
 | 🎯 **Latihan Kamus** | Kuis 10 soal per tahap CEFR langsung dari entri kamus (definisi → kata), lengkap dengan XP & statistik akurasi |
-| 🎓 **Ujian Tahap & Sertifikat** | 15 soal yang menguji **seluruh** tahap — pelajaran *dan* entri kamusnya — dalam tiga arah: arti→kata, kata→arti, dan isi rumpang kalimat. Tanpa bocoran di tengah ujian; jawaban benar baru terbuka di akhir bersama daftar yang meleset. Lulus di **80%** memberi sertifikat per bahasa yang bisa **dicetak / disimpan PDF** |
+| 🎓 **Ujian Tahap & Sertifikat** | 15 soal yang menguji **seluruh** tahap — pelajaran *dan* entri kamusnya — dalam tiga arah: arti→kata, kata→arti, dan isi rumpang kalimat. Tanpa bocoran di tengah ujian; jawaban benar baru terbuka di akhir bersama daftar yang meleset. Lulus di **80%** memberi sertifikat per bahasa yang bisa **dicetak / disimpan PDF** — satu halaman, dan hasil cetaknya sama persis baik dari tema terang maupun gelap |
+| 🏆 **Ujian Akhir Lintas Tahap** | 25 soal yang ditarik **bergiliran dari setiap tahap yang sudah kamu lulusi**, bukan satu tahap saja — membuktikan tahap-tahap lama masih berdiri, bukan cuma yang terakhir. Terbuka setelah dua tahap lulus, dan lulusnya tercetak di sertifikat |
+| 🗂️ **Daftar Kata Buatan Sendiri** | Koleksi bernama milikmu — untuk perjalanan, ujian, atau satu bab tertentu. Isi dari kamus atau pelajaran mana pun lewat tombol 🗂️, boleh campur bahasa, lalu latih dengan Kuis atau Simak |
+| 🔇 **Jujur soal suara** | Aplikasi memeriksa apakah perangkatmu punya suara untuk bahasa itu (10 dari 23 tak ada di Windows bawaan). Tombol yang tak bisa berbunyi ditandai dan dijelaskan, dan mode yang seluruhnya bunyi menolak berjalan — bukan diam-diam membacakan aksara Arab dengan lidah Inggris |
 | 🃏 **Flashcard interaktif** | Kartu balik dengan animasi 3D + navigasi keyboard |
 | 🗣️ **Dialog percakapan** | Pelajaran "Percakapan" bergaya chat **multi-pembicara (A/B/C/D)** — grup & dialog panjang — dengan TTS & arti tiap baris di semua bahasa |
 | 🧠 **Kuis otomatis** | Pilihan ganda (acak kriptografis) dengan skor, cincin progres, dan XP |
@@ -30,7 +33,7 @@ Profesional, ringan, multi-bahasa, **bekerja offline**, dengan **akun aman & sin
 | 🔡 **Pelatih Aksara** | Kuasai hiragana, hangul, kiril (Rusia & Ukraina), abjad Arab, alfabet Yunani, & konsonan Thai |
 | 🌟 **Kata Hari Ini** | Satu kata pilihan per hari dari seluruh katalog — bisa didengarkan, dibintangi, & dibuka pelajarannya |
 | 🔎 **Filter Katalog** | Cari bahasa di halaman Katalog (cocok dengan nama lokal, Inggris, Spanyol, endonim, atau kode) |
-| 🔍 **Pencarian lintas bahasa** | Satu kotak cari menembus **6.922 lema** (3.563 kata pelajaran + 3.359 entri kamus) dengan saringan bahasa, tingkat, dan "hanya yang ada contoh" |
+| 🔍 **Pencarian lintas bahasa** | Satu kotak cari menembus **6.970 lema** (3.563 kata pelajaran + 3.407 entri kamus) dengan saringan bahasa, tingkat, dan "hanya yang ada contoh" |
 | 🔁 **Review SRS** | Pengulangan berjarak (SM-2) atas kata pelajaran **dan entri kamus** — lema yang kamu bintangi atau yang muncul di Latihan Kamus masuk rotasi yang sama |
 | 🎯 **Target Harian** | Target XP harian yang bisa diatur (Santai/Normal/Serius) + cincin progres |
 | 🎲 **Campur Cepat** | 10 soal acak lintas kata yang sudah dipelajari, satu ketuk |

@@ -9,6 +9,7 @@ import {
   courseCardHTML, wireCourseCards, lessonRowHTML, vocabHTML, dialogHTML, wireSpeak, progRowHTML, notFound,
 } from "./partials.js";
 import { navigate, rerender } from "../core/router.js";
+import { wireAddList } from "./lists.js";
 import { session } from "../auth/session.js";
 import { I18N } from "../i18n.js";
 import { SCRIPTS } from "../scripts.js";
@@ -372,11 +373,11 @@ export function renderLesson(view, [cid, lid]) {
     <div class="practice-bar">
       <button class="btn" id="goFlash">🃏 ${esc(t("lesson.flashcards"))}</button>
       <button class="btn btn--accent" id="goQuiz">🧠 ${esc(t("lesson.quiz"))}</button>
-      <button class="btn" id="goListen">👂 ${esc(t("lesson.listen"))}</button>
+      <button class="btn" id="goListen" data-needs-voice>👂 ${esc(t("lesson.listen"))}</button>
       <button class="btn" id="goMatch">🔗 ${esc(t("lesson.match"))}</button>
-      <button class="btn" id="goAudio">🎧 ${esc(t("lesson.audio"))}</button>
+      <button class="btn" id="goAudio" data-needs-voice>🎧 ${esc(t("lesson.audio"))}</button>
       ${!l.dialog ? `<button class="btn" id="goType">⌨️ ${esc(t("lesson.type"))}</button>` : ""}
-      ${!l.dialog ? `<button class="btn" id="goDictation">📝 ${esc(t("lesson.dictation"))}</button>` : ""}
+      ${!l.dialog ? `<button class="btn" id="goDictation" data-needs-voice>📝 ${esc(t("lesson.dictation"))}</button>` : ""}
       ${!l.dialog ? `<button class="btn" id="goSpeak">🎤 ${esc(t("lesson.speak"))}</button>` : ""}
       ${!l.dialog && !c.cjk && c.id !== "th" && l.items.some((it) => it.ex) ? `<button class="btn" id="goBuild">🧩 ${esc(t("lesson.build"))}</button>` : ""}
       ${l.items.some((it) => it.ex) ? `<button class="btn" id="goCloze">✍️ ${esc(t("lesson.cloze"))}</button>` : ""}
@@ -386,6 +387,7 @@ export function renderLesson(view, [cid, lid]) {
 
   wireSpeak(view, c);
   wireFavButtons(view);
+  wireAddList(view);
   $("#goFlash").onclick = () => navigate(`#/flashcards/${c.id}/${l.id}`);
   $("#goQuiz").onclick = () => navigate(`#/quiz/${c.id}/${l.id}`);
   $("#goListen").onclick = () => navigate(`#/listen/${c.id}/${l.id}`);
@@ -491,6 +493,7 @@ export function renderProgress(view) {
         ${mistakes ? `<a class="btn btn--sm" href="#/mistakes" aria-label="${esc(t("mistakes.count", mistakes))}">${esc(t("mistakes.go"))} · ${mistakes}</a>` : ""}
         ${favs ? `<a class="btn btn--sm" href="#/favorites">⭐ ${esc(t("fav.title"))} · ${favs}</a>` : ""}
         ${lexFavs ? `<a class="btn btn--sm btn--ghost" href="#/search">📖 ${esc(t("dict.myFav"))} · ${lexFavs}</a>` : ""}
+        <a class="btn btn--sm btn--ghost" href="#/lists">🗂️ ${esc(t("lists.title"))}${store.listCount() ? ` · ${store.listCount()}` : ""}</a>
         ${certs.length ? `<a class="btn btn--sm btn--ghost" href="#/cert/${esc(certs[0])}">📜 ${esc(t("cert.title"))} · ${store.examsPassed()}</a>` : ""}
       </div>
     </div>

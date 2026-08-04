@@ -20,12 +20,13 @@ import {
   renderFlashcards, renderQuiz, renderReview, renderCloze,
   renderType, renderListen, renderMatch, renderDailyMix, renderMistakes,
   renderSpeak, renderAudio, renderBuild, renderScript, renderFavorites,
-  renderDictation,
+  renderDictation, renderListQuiz, renderListListen,
 } from "./views/practice.js";
+import { renderLists, renderList } from "./views/lists.js";
 import { renderDictionary, renderBook, renderEntry, renderGuide, resetDictionaryIndex } from "./views/dictionary.js";
 import { renderPathIndex, renderPath, renderDrill } from "./views/path.js";
 import { renderExam, renderCertificate } from "./views/exam.js";
-import { loadLexicons, loadAllLexicons, lexiconLoaded } from "./lexicon.js";
+import { loadLexicons, lexiconLoaded } from "./lexicon.js";
 import { renderLogin, renderRegister, renderAccount } from "./views/auth.js";
 import { notFound } from "./views/partials.js";
 
@@ -66,6 +67,20 @@ const needsProgress = (render) => (view, params, ctx) => {
     })
     .catch(() => render(view, params, ctx));
 };
+/** A word list can hold words from any of the 23 languages, so it waits for
+ *  exactly the chunks its own words come from — no more, and never fewer. */
+const needsList = (render) => (view, params, ctx) => {
+  const langs = store.listLangs(params[0]);
+  if (!langs.length || (langs.every(courseLoaded) && langs.every(lexiconLoaded))) {
+    return render(view, params, ctx);
+  }
+  view.innerHTML = skeleton(4);
+  Promise.all([loadCourses(langs), loadLexicons(langs)])
+    .then(() => {
+      if (!(ctx && ctx.signal && ctx.signal.aborted)) render(view, params, ctx);
+    })
+    .catch(() => render(view, params, ctx));
+};
 /* ------------------------------------------------ lazy dictionary loading
    The reference volumes (js/lexicon/<id>.js) load the same way the course
    chunks do. Routes that show a book wait for exactly one of them; the
@@ -88,22 +103,17 @@ function awaitLexicon(render, pick, alsoCourse) {
 /** Routes shaped #/thing/:lang — one dictionary is enough. */
 const needsBook = (render, alsoCourse = false) =>
   awaitLexicon(render, ([lang]) => (lang ? [lang] : []), alsoCourse);
-/** The search spans every language, so it needs every course AND every book. */
-const needsEverything = (render) => (view, params, ctx) => {
-  view.innerHTML = skeleton(4);
-  Promise.all([loadCourses(COURSES.map((c) => c.id)), loadAllLexicons()])
-    .then(() => {
-      resetDictionaryIndex();
-      if (!(ctx && ctx.signal && ctx.signal.aborted)) render(view, params, ctx);
-    })
-    .catch(() => render(view, params, ctx));
-};
+/* The search spans every language, so it once waited for every course AND
+   every book — ~1.9 MB — behind a skeleton, which meant the search box did not
+   exist until the last of 46 chunks had landed. It now renders first and pulls
+   the books in behind itself; views/dictionary.js owns that, because it is the
+   thing that has to widen as each one arrives. */
 
 /* ----------------------------------------------------------------- routes */
 registerRoutes({
   home: { render: renderHome },
   courses: { render: renderCourses },
-  search: { render: needsEverything(renderDictionary) },
+  search: { render: renderDictionary },
   dict: { render: needsBook(renderBook) },
   entry: { render: needsBook(renderEntry, true) },
   guide: { render: needsBook(renderGuide) },
@@ -129,6 +139,10 @@ registerRoutes({
   mix: { render: needsProgress(renderDailyMix) },
   mistakes: { render: needsProgress(renderMistakes) },
   favorites: { render: needsProgress(renderFavorites) },
+  lists: { render: renderLists },
+  list: { render: renderList },
+  listquiz: { render: needsList(renderListQuiz) },
+  listlisten: { render: needsList(renderListListen) },
   review: { render: needsProgress(renderReview) },
   progress: { render: renderProgress },
   stats: { render: renderStats },

@@ -556,6 +556,21 @@ button { font-family: inherit; }
 .speakbtn:hover { background: var(--brand-soft); color: var(--brand); transform: scale(1.06); }
 .speakbtn:active { transform: scale(.96); }
 
+/* No voice installed for this language. The button still works — it shows the
+   word and says why it stayed silent — but it stops promising audio it cannot
+   deliver. Dashed, because a dashed control reads as "unavailable" without
+   the greyed-out look of one that is disabled and unclickable. */
+.is-mute {
+  opacity: .55; border-style: dashed !important;
+  border-color: var(--line-strong) !important;
+}
+.is-mute:hover { background: var(--surface-3); color: var(--text); transform: none; }
+.is-mute::after {
+  content: "🚫"; position: absolute; right: -2px; bottom: -2px;
+  font-size: .62rem; line-height: 1; filter: grayscale(1);
+}
+.speakbtn.is-mute, .btn.is-mute { position: relative; }
+
 /* Practice launcher */
 .practice-bar { display: flex; gap: 12px; flex-wrap: wrap; margin: 22px 0; }
 
@@ -829,7 +844,7 @@ button { font-family: inherit; }
 .modal { max-width: 420px; width: 100%; padding: 24px; }
 .modal h3 { margin: 0 0 8px; font-size: 1.2rem; }
 .modal p { margin: 0 0 18px; color: var(--text-dim); }
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
 
 /* =========================================================================
    Skeleton loaders
@@ -1033,14 +1048,106 @@ button { font-family: inherit; }
 .cert__meta { display: flex; justify-content: center; gap: 26px; flex-wrap: wrap; margin-top: 22px; }
 .cert__meta small { display: block; color: var(--text-faint); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
 .cert__meta strong { font-size: 1rem; }
+.cert__final { margin: 14px auto 0; font-weight: 800; font-size: .92rem; color: var(--accent-text); }
 .cert__foot { color: var(--text-faint); font-size: .76rem; margin: 22px 0 0; }
 
-/* Printing a certificate should yield the certificate — nothing else. */
+/* The comprehensive paper's badge — gold rather than a band colour, because
+   it certifies the whole ladder rather than any one rung of it. */
+.chip--final { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; font-weight: 800; }
+
+/* =========================================================================
+   Word lists — the learner's own collections
+   ========================================================================= */
+.listbtn {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+  background: transparent; border: 1px solid var(--line); color: var(--text-faint);
+  font-size: 1rem; line-height: 1; transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+}
+.listbtn:hover { background: var(--brand-soft); color: var(--brand); transform: scale(1.06); }
+.listbtn.is-on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+
+.list-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.list-card { display: flex; align-items: center; gap: 14px; padding: 16px 18px; }
+.list-card__ico { font-size: 1.6rem; line-height: 1; }
+.list-card__main { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+.list-card__main strong { font-size: 1rem; overflow-wrap: anywhere; }
+.list-card__main small { color: var(--text-faint); font-size: .8rem; }
+.list-card__go { color: var(--text-faint); font-size: 1.3rem; }
+
+.list-rows { display: grid; gap: 10px; }
+.list-row { align-items: center; }
+.list-row__from { display: block; color: var(--text-faint); font-size: .76rem; margin-top: 2px; }
+.list-row__rm { flex: 0 0 auto; color: var(--text-faint); }
+.list-row__rm:hover { color: var(--danger); }
+.list-hint { color: var(--text-faint); font-size: .88rem; margin: 14px 0 0; }
+
+/* The add-to-list picker */
+.list-pick__word { font-weight: 800; font-size: 1.05rem; margin: 0 0 10px; overflow-wrap: anywhere; }
+.list-pick { display: grid; gap: 4px; max-height: 40vh; overflow-y: auto; margin-bottom: 14px; }
+.list-pick__row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r-sm); }
+.list-pick__row:hover { background: var(--surface-3); }
+.list-pick__name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.list-pick__n { flex: 0 0 auto; }
+.list-pick__none { color: var(--text-faint); font-size: .88rem; margin: 0 0 12px; }
+.list-pick__new { display: flex; gap: 8px; }
+.list-pick__new input, .dialog-input {
+  flex: 1 1 auto; min-width: 0; padding: 10px 12px; border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: var(--surface-3); color: var(--text); font: inherit;
+}
+.dialog-input { width: 100%; }
+
+/* "12/23 languages searchable so far" — the search works from the first book
+   that lands, so this says how wide it has got, not that it is unusable. */
+.dict-loading {
+  margin: 10px 0 0; font-size: .82rem; font-weight: 700; color: var(--text-faint);
+  display: flex; align-items: center; gap: 8px;
+}
+.dict-loading::before {
+  content: ""; width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto;
+  border: 2px solid var(--line-strong); border-top-color: var(--brand);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Printing a certificate should yield the certificate — nothing else.
+
+   Two rules govern this block, both learned from looking at the paper rather
+   than at the tests. First, every floating layer has to go: the install
+   prompt, the confetti still falling from the pass screen and an open dialog
+   are all `position: fixed`, so they ride along onto the sheet. Second, the
+   printer knows nothing about themes — a learner in dark mode must get the
+   same sheet a learner in light mode gets. That means pinning ink colours
+   rather than inheriting variables, and forcing white behind everything so
+   the page survives "background graphics" being switched on. */
+@page { size: A4; margin: 14mm; }
+
 @media print {
-  .appbar, .bottomnav, .no-print, .toast, .skip-link { display: none !important; }
-  body, .main { background: #fff; color: #111; }
-  .cert { border: none; padding: 0; }
-  .cert__inner { border-color: #111; }
-  .cert__eyebrow, .cert__awarded, .cert__for, .cert__meta small, .cert__foot { color: #444; }
-  .cert__can { color: #222; }
+  .appbar, .bottomnav, .no-print, .toast, .skip-link,
+  .install-fab, .confetti, .modal-backdrop { display: none !important; }
+
+  html, body, .main { background: #fff !important; color: #111 !important; }
+  /* On screen the body reserves a viewport-and-a-bit for the bottom nav; on
+     paper that reserve is what tips a one-page certificate onto a second. */
+  body { min-height: 0 !important; padding-bottom: 0 !important; }
+  .main { padding: 0 !important; max-width: none !important; }
+
+  /* One sheet, and the certificate sitting in the middle of it rather than
+     clinging to the top edge above a third of a page of nothing. */
+  .cert {
+    border: none; padding: 0; background: #fff !important;
+    display: flex; align-items: center; min-height: 96vh;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .cert__inner { width: 100%; border-color: #111; background: #fff !important; }
+  .cert__lang, .cert__name, .cert__band, .cert__meta strong, .cert__final { color: #111 !important; }
+  .cert__eyebrow, .cert__awarded, .cert__for, .cert__meta small, .cert__foot { color: #444 !important; }
+  .cert__can, .cert__can li { color: #222 !important; }
+
+  /* The band is the one fact the certificate exists to state, so it cannot
+     depend on a tinted background the printer may refuse to lay down. It
+     prints as ink on an outlined badge instead. */
+  .cert .chip--band {
+    color: #111 !important; background: transparent !important;
+    border: 1.2pt solid #111 !important;
+  }
 }

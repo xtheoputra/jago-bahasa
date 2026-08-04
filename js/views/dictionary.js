@@ -13,12 +13,13 @@
    ========================================================================= */
 import { $, $$, esc, mean, fold } from "../core/dom.js";
 import { speak } from "../core/ui.js";
-import { COURSES, findCourse } from "../data.js";
-import { BANDS, BAND_LEVEL, LEXICONS, alphabetOf, getLexicon, findEntry } from "../lexicon.js";
+import { COURSES, findCourse, loadCourse } from "../data.js";
+import { BANDS, BAND_LEVEL, LEXICONS, alphabetOf, getLexicon, findEntry, loadLexicon } from "../lexicon.js";
 import * as store from "../core/state.js";
 import { randInt } from "../core/random.js";
 import { navigate } from "../core/router.js";
 import { notFound } from "./partials.js";
+import { wireAddList } from "./lists.js";
 import { I18N } from "../i18n.js";
 
 const t = (...a) => I18N.t(...a);
@@ -61,6 +62,12 @@ const favBtn = (key) => {
   const on = store.isFav(key);
   return `<button class="favbtn ${on ? "on" : ""}" data-fav="${esc(key)}" aria-label="${esc(t("fav.toggle"))}" aria-pressed="${on ? "true" : "false"}">${on ? "★" : "☆"}</button>`;
 };
+
+/** File this word into one of the learner's own lists. Sits beside the star:
+ *  the star is the one unnamed bag, this is every named one. */
+const listBtn = (key, label) =>
+  `<button class="listbtn" data-addlist="${esc(key)}" data-addlabel="${esc(label)}"
+     aria-label="${esc(t("lists.addTo"))}">🗂️</button>`;
 
 const entryHref = (e) => `#/entry/${encodeURIComponent(e.lang)}/${encodeURIComponent(e.w)}`;
 
@@ -188,7 +195,20 @@ function shelfHTML() {
     <div class="shelf">${cards}</div>`;
 }
 
-export function renderDictionary(view) {
+/** The order the books are fetched in when the search page opens.
+ *  Whatever the learner is actually studying comes first, so the language they
+ *  are most likely to search is searchable within one chunk rather than
+ *  twenty-three. */
+function loadOrder() {
+  const st = store.getState();
+  const weight = (c) =>
+    (st.lastCourse === c.id ? 0 : 2) - (store.courseProgress(c).pct > 0 ? 1 : 0);
+  return COURSES.map((c, i) => ({ c, i }))
+    .sort((a, b) => weight(a.c) - weight(b.c) || a.i - b.i)
+    .map((x) => x.c);
+}
+
+export function renderDictionary(view, _params, ctx) {
   const state = { q: "", lang: "all", level: "all", ex: false };
 
   const langOpts = [`<option value="all">${esc(t("search.allLangs"))}</option>`]
@@ -209,6 +229,7 @@ export function renderDictionary(view) {
         <label class="check dict-check"><input type="checkbox" id="dictEx" /> ${esc(t("search.withEx"))}</label>
       </div>
     </div>
+    <p class="dict-loading" id="dictLoading" aria-live="polite" hidden></p>
     <p class="dict-count" id="dictCount" aria-live="polite"></p>
     <div class="dict-results" id="dictResults"></div>
     <div id="dictShelf">${favShelfHTML()}${shelfHTML()}</div>
@@ -218,6 +239,7 @@ export function renderDictionary(view) {
   const results = $("#dictResults", view);
   const countEl = $("#dictCount", view);
   const shelf = $("#dictShelf", view);
+  const loadingEl = $("#dictLoading", view);
 
   function run() {
     const nq = fold(state.q).trim();
@@ -288,6 +310,39 @@ export function renderDictionary(view) {
 
   wireSpeakButtons(view);
   wireFav(shelf); // the starred-entries block carries its own ⭐ buttons
+
+  /* ------------------------------------------------------ progressive load
+     The search spans 23 courses and 23 dictionaries — about 1.9 MB of
+     JavaScript. Waiting for all of it behind a skeleton meant the search box
+     did not exist until the last book landed, which on a phone is seconds of
+     a page that cannot be typed into. So the page is built first and the
+     books arrive behind it, each one widening the search as it lands. */
+  const signal = ctx && ctx.signal;
+  const books = loadOrder();
+  let arrived = 0;
+  let rerunTimer = null;
+
+  const showProgress = () => {
+    const done = arrived >= books.length;
+    loadingEl.hidden = done;
+    if (!done) loadingEl.textContent = t("search.loading", `${arrived}/${books.length}`);
+  };
+
+  const onArrival = () => {
+    arrived++;
+    resetDictionaryIndex(); // a new volume invalidates the index
+    if (signal && signal.aborted) return;
+    showProgress();
+    // Twenty-three arrivals must not mean twenty-three full re-renders.
+    clearTimeout(rerunTimer);
+    rerunTimer = setTimeout(run, 120);
+  };
+
+  showProgress();
+  for (const c of books) {
+    Promise.all([loadCourse(c.id), loadLexicon(c.id)]).then(onArrival, onArrival);
+  }
+  if (signal) signal.addEventListener("abort", () => clearTimeout(rerunTimer), { once: true });
   run();
   qEl.focus();
 }
@@ -464,6 +519,7 @@ export function renderEntry(view, [lang, word]) {
         <div class="entry__acts">
           ${speakBtn(e.w, c.speech)}
           ${favBtn(e.key)}
+          ${listBtn(e.key, e.w)}
         </div>
       </header>
 
@@ -502,6 +558,7 @@ export function renderEntry(view, [lang, word]) {
 
   wireSpeakButtons(view);
   wireFav(view);
+  wireAddList(view);
 }
 
 /* =====================================================================

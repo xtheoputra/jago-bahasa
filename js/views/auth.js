@@ -5,7 +5,7 @@
    meter. All user-controlled output is escaped.
    ========================================================================= */
 import { $, $$, esc, initials } from "../core/dom.js";
-import { toast, liveAlert } from "../core/ui.js";
+import { toast, liveAlert, openDialog } from "../core/ui.js";
 import { session } from "../auth/session.js";
 import { navigate, safeNext, rerender } from "../core/router.js";
 import {
@@ -475,54 +475,17 @@ export function renderAccount(view) {
 }
 
 /* =====================================================================
-   Accessible confirm dialog (focus-trapped, Escape, restores focus).
+   Accessible confirm dialog. The backdrop, focus trap, Escape handling and
+   focus restoration are shared with every other dialog in the app, so only
+   the wording and what the buttons mean live here.
    ===================================================================== */
 export function confirmDialog({ title, body, confirmLabel, cancelLabel, danger = false }) {
-  return new Promise((resolve) => {
-    const prev = document.activeElement;
-    const back = document.createElement("div");
-    back.className = "modal-backdrop";
-    back.innerHTML = `
-      <div class="modal card" role="dialog" aria-modal="true" aria-labelledby="mdl-title">
-        <h3 id="mdl-title">${esc(title)}</h3>
-        ${body ? `<p>${esc(body)}</p>` : ""}
-        <div class="modal-actions">
-          <button class="btn btn--ghost" data-act="cancel">${esc(cancelLabel || t("account.cancel"))}</button>
-          <button class="btn ${danger ? "btn--danger" : ""}" data-act="ok">${esc(confirmLabel)}</button>
-        </div>
-      </div>`;
-    document.body.appendChild(back);
-    const dlg = $(".modal", back);
-    const close = (val) => {
-      back.remove();
-      document.removeEventListener("keydown", onKey, true);
-      if (prev && prev.focus) prev.focus();
-      resolve(val);
-    };
-    $('[data-act="ok"]', back).onclick = () => close(true);
-    $('[data-act="cancel"]', back).onclick = () => close(false);
-    back.addEventListener("mousedown", (e) => {
-      if (e.target === back) close(false);
-    });
-    function onKey(e) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        close(false);
-      } else if (e.key === "Tab") {
-        const f = $$("button", dlg);
-        if (!f.length) return;
-        const first = f[0];
-        const last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-    document.addEventListener("keydown", onKey, true);
-    $('[data-act="ok"]', back).focus();
-  });
+  return openDialog({
+    title: esc(title),
+    bodyHTML: body ? `<p>${esc(body)}</p>` : "",
+    actions: [
+      { act: "cancel", cls: "btn--ghost", label: esc(cancelLabel || t("account.cancel")) },
+      { act: "ok", cls: danger ? "btn--danger" : "", label: esc(confirmLabel) },
+    ],
+  }).then((v) => v === "ok");
 }

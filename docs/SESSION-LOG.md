@@ -5,23 +5,37 @@ bersama Claude Code, agar konteks dan keputusan desain tersimpan dalam repositor
 
 ---
 
-## 🔜 BESOK MULAI DARI SINI (per 2026-07-28, setelah v3.3)
+## 🔜 BESOK MULAI DARI SINI (per 2026-08-04, setelah v3.4)
 
-**Keadaan sekarang:** commit `6742dee` sudah di-push, working tree bersih,
-`npm test` **126 hijau** (±45 detik), service worker `jb-v3.3.0`.
-Verifikasi selalu lewat `npm test` — jangan bikin pemeriksaan manual lagi.
+**Keadaan sekarang:** `npm test` **155 hijau** (±90 detik), service worker
+`jb-v3.4.0`. Verifikasi selalu lewat `npm test` — jangan bikin pemeriksaan
+manual lagi.
 
-**Yang belum pernah dibuktikan (paling layak dikerjakan lebih dulu):**
-- Ujian tahap & sertifikat v3.3 **belum pernah dipakai pengguna sungguhan** di
-  peramban biasa — baru dibuktikan lewat Chrome headless. Coba sekali di
-  ponsel/desktop, terutama **cetak sertifikatnya ke PDF**.
-- 21 dari 23 bahasa masih **144 lema**, sementara `en` & `ko` 167–168. Isi
-  kamus belum seimbang; struktur & tesnya sudah siap menerima tambahan
-  (tambah entri + perbarui `n` di `js/lexicon.js`).
+**Satu-satunya pekerjaan yang tertinggal separuh:**
+- **Penyeimbangan kamus baru 2 dari 21 bahasa.** `es` dan `fr` sudah naik
+  144 → **168 lema**; 19 bahasa lain (`de it pt nl sv pl tr ms tl vi sw ja zh
+  ar ru uk el hi th`) masih 144. Bentuk sasarannya pasti: **+4 lema per tahap
+  CEFR** (A1 40, A2 40, B1 28, B2 28, C1 16, C2 16 = 168), persis seperti `en`
+  dan `ko`.
+- Alat bantunya sudah ada dan terbukti — lihat bagian "Penyeimbang jilid" di
+  bawah. Kerangka maknanya sengaja dibuat sama untuk semua bahasa (air ·
+  makan · ibu · merah / iklim · mengingat · murah · perjalanan / kesehatan ·
+  menjelaskan · aman · masyarakat / dampak · menganggap · enggan · kerangka /
+  kesenjangan · menimbang · rentan · wacana / kefasihan · meredam ·
+  tak-terselami · pertalian), supaya jilid-jilidnya tetap sejajar.
+- **Peringatan mutu:** lema kamus dibuat tanpa pemeriksaan penutur asli.
+  Untuk bahasa yang tak dikuasai pemilik proyek (Thai, Swahili, Tagalog,
+  Ukraina, Hindi), sebaiknya diperiksa orang sebelum dianggap final.
 
-**Ide yang sudah dianalisis tapi belum dikerjakan:**
-penanda "suara tak tersedia" (TTS), indeks cari yang lebih ringan, daftar kata
-buatan sendiri, bahasa antarmuka ke-4, dan ujian gabungan lintas tahap.
+**Yang sudah dibuktikan sesi ini (jangan diulang):** ujian tahap + sertifikat
+v3.3 akhirnya dicetak sungguhan ke PDF lewat Chrome, dan dua cacat nyata
+ditemukan & ditutup (lihat v3.4).
+
+**Bahasa antarmuka ke-4 DIBATALKAN** atas keputusan pemilik proyek
+(2026-08-04). Alasannya masuk akal: arti kata & judul pelajaran tersimpan
+sebagai rangkap-tiga `[id, en, es]` di 3.359 lema + seluruh katalog kursus,
+jadi bahasa ke-4 hanya akan menerjemahkan menu sementara arti katanya jatuh
+ke bahasa Inggris. Jangan tawarkan lagi tanpa alasan baru.
 
 **Jebakan yang jangan didiagnosis ulang:** kalau uji asap sesekali bilang "rute
 tak pernah memasang view", itu **bukan** bug aplikasi — `--virtual-time-budget`
@@ -937,4 +951,150 @@ dengan enam tahap, lima kali. Karena itu percobaan ulang dinaikkan ke lima dan t
 
 ---
 
-*Diperbarui — v3.3 2026-07-28 (ujian tahap CEFR 3 arah + sertifikat yang bisa dicetak; 16 tes baru; penyebab kegoyahan uji asap ditemukan & ditangani).*
+---
+
+## Pembaruan v3.4 — Kertas, Suara, Daftar Sendiri & Ujian Akhir (2026-08-04)
+
+Sesi ini menutup lima butir yang menggantung sejak v3.3, dan sepanjang jalan
+menemukan **enam bug nyata** yang tak satu pun tertangkap 126 tes yang ada.
+
+### 1. Sertifikat akhirnya benar-benar dicetak — dan ternyata rusak
+
+Ujian tahap v3.3 sudah lulus 126 tes, tapi belum sekali pun ada yang menekan
+tombol cetaknya. Begitu PDF-nya dibuat sungguhan lewat Chrome DevTools
+Protocol dan **dilihat dengan mata**, dua cacat langsung terlihat:
+
+- **Tombol "Pasang Aplikasi" ikut tercetak** di pojok setiap lembar. Tombol
+  itu `position: fixed` dan tak pernah masuk daftar `.no-print`. Ikut ketemu:
+  confetti dan latar dialog punya masalah yang sama.
+- **Mode gelap mencetak balok biru-gelap.** `.cert` menahan `var(--surface-2)`,
+  jadi begitu pengguna mencentang "background graphics" — yang justru mereka
+  lakukan supaya sertifikatnya bagus — ketiga baris "bisa apa" **hilang total**
+  (teks `#222` di atas biru tua) dan nama pembelajarnya nyaris tak terbaca.
+  Lencana tahapnya pun memudar jadi oranye pucat di atas kertas putih; padahal
+  itulah satu-satunya fakta yang disertifikasi.
+
+Aturan cetaknya ditulis ulang: warna **dikunci ke tinta**, bukan diwarisi dari
+tema; latar dipaksa putih supaya tahan "background graphics"; lencana tahap
+jadi badan bergaris agar tak bergantung latar berwarna; `body` yang di layar
+menyisakan seviewport untuk bilah bawah dinolkan saat mencetak — itulah yang
+sempat mendorong sertifikat ke halaman kedua. Sekarang **satu halaman, di
+tengah, dan PDF mode terang & gelap identik byte demi byte**.
+
+### 2. Setengah katalog tak bisa diucapkan, dan aplikasinya berpura-pura bisa
+
+Aplikasi mengajarkan 23 bahasa; Chrome bawaan Windows hanya punya suara untuk
+13. Untuk 10 sisanya (`ar ms sv tr tl vi th el uk sw`) tombol 🔊 dulu
+menyerahkan teks ke suara bawaan — jadi pembelajar menekan tombol dan mendengar
+fonetik Inggris dibacakan di atas aksara Arab, atau tak mendengar apa-apa,
+tanpa cara membedakannya dari tombol rusak.
+
+Sekarang ketersediaan diperiksa lebih dulu: tombol yang tak bisa berbunyi
+ditandai (garis putus-putus + 🚫 + penjelasan), dan **tiga mode yang seluruhnya
+bunyi** — Dengar, Dikte, Audio — menolak berjalan dengan penjelasan, alih-alih
+menyajikan kartu yang pertanyaannya mustahil didengar. Penandaan dipasang lewat
+satu `MutationObserver` di router, jadi dua puluh view tak perlu diajari
+mengingatnya sendiri.
+
+> **Bug yang ditemukan tes:** `hasVoice` awalnya memotong kode bahasa dengan
+> `slice(0, 2)`. Tagalog berkode **`fil-PH`**, dan dua huruf pertamanya adalah
+> **`fi` — Finlandia**. Suara Finlandia akan ditawarkan sebagai cara membaca
+> bahasa Tagalog. Sekarang dipotong di tanda hubung, bukan di huruf kedua.
+
+### 3. Soal ujian yang membocorkan jawabannya sendiri
+
+Dua cacat di generator soal, keduanya membuat soal bisa dijawab **tanpa tahu
+bahasanya sama sekali**:
+
+- `gapSentence` hanya mengosongkan kemunculan **pertama**. "Comer es comer
+  bien." jadi "____ es comer bien." — jawabannya masih terpampang. Lebih parah:
+  ia mencocokkan di tengah kata lain, jadi kata Spanyol **"es"** mengubah
+  "Esto es un libro." menjadi "**____to** es un libro." — merusak kata yang
+  tak bersalah *dan* membiarkan jawabannya terlihat. Sekarang: semua kemunculan,
+  dan hanya kata utuh (batasnya ditulis sebagai grup tertangkap, bukan
+  *lookbehind*, yang baru dikenal Safari 16.4).
+- **Pengecoh dipilih acak dari kumpulan yang mencampur lema kamus dengan baris
+  dialog utuh.** Hasilnya: jawaban berupa kalimat penuh berdiri di antara tiga
+  kata tunggal — "zapato", "día", "La habitación" melawan "Y yo compro el
+  postre. ¡Nos vemos el sábado!". Sekarang pengecoh diurutkan menurut kedekatan
+  panjang dengan jawabannya; tak perlu ambang batas, dan tetap bekerja di
+  aksara yang menulis tanpa spasi.
+
+Uji "gap" yang dulu **goyah** (lulus/gagal berganti-ganti karena `buildExam`
+mengacak) kini menyapu enam tahap × 12 putaran, jadi kegagalan tak lagi
+bergantung nasib.
+
+### 4. Ujian akhir lintas tahap
+
+Ujian tahap membuktikan kamu **mencapai** suatu tingkat. Ia tak bisa
+membuktikan tingkat di bawahnya **masih berdiri** — orang bisa lulus A1, lalu
+dua bulan sibuk di B1 dan diam-diam kehilangan separuh A1. `#/exam/:lang/final`
+menjawab itu: 25 soal ditarik **bergiliran** dari setiap tahap yang sudah
+disertifikasi, jadi tak ada tahap yang mendominasi dan tak ada yang terlewat.
+Muncul hanya setelah dua tahap lulus (di bawah itu ia cuma ujian tahap
+bertopeng). Lulusnya bernilai 200 XP dan tercetak di sertifikat.
+
+> **Bug yang ditemukan tes:** dek tiap tahap dibangun terpisah, dan sebuah kata
+> bisa hidup di dua tahap sekaligus (Spanyol "ir" ada di pelajaran A1 *dan*
+> sebagai lema A2) — jadi satu kata bisa **ditanyakan dua kali** dalam satu
+> ujian. Sekarang dijaga dengan himpunan kata yang sudah terambil.
+
+### 5. Daftar kata buatan sendiri
+
+Favorit adalah satu kantong tanpa nama. Orang yang berkemas untuk perjalanan,
+atau mengulang satu bab, ingin beberapa kantong — masing-masing bernama. Maka
+sebuah daftar **adalah** kantong favorit yang bernama: ruang kunci yang sama,
+diselesaikan lewat `resolveCard()` yang sama, sehingga setiap mode latihan
+sudah bisa memainkannya tanpa tahu daftar itu ada. `#/lists`, `#/list/:id`,
+tombol 🗂️ di kamus & pelajaran, dan pemilih yang bisa membuat daftar baru
+di tempat.
+
+Hanya mode berbasis-kumpulan yang ditawarkan (Kuis, Dengar): Flashcard dan
+Match dibangun di sekitar satu arah tulisan dan satu aksara, sedangkan satu
+daftar bisa memuat kedua puluh tiga bahasa sekaligus.
+
+> **Dua bug yang ditemukan tes:** (a) `exportData` **tak menyertakan daftar
+> sama sekali** — daftar kata akan hilang saat cadang/pulih; (b) id daftar
+> dibuat dari jam saja, jadi dua perangkat yang membuat daftar di detik yang
+> sama menghasilkan **id yang sama**, dan satu koleksi diam-diam menelan yang
+> lain saat digabung. Sekarang id membawa 50 bit acak kripto di belakang cap
+> waktunya, dan penggabungan menyatukan kedua sisi, tak pernah memilih salah
+> satu.
+
+### 6. Membuka kamus tak lagi menunggu 1,5 MB
+
+Membuka `#/search` dulu menunggu **46 potongan, ±1,9 MB JavaScript** di balik
+kerangka kosong — kotak pencariannya belum ada sampai buku terakhir mendarat.
+Dua perbaikan:
+
+- **Server memampatkan.** Isi aplikasi ini berupa JavaScript yang sangat
+  berulang, dan mengempis di bawah sepertiganya: satu kamus **40.408 → 14.953
+  byte** (gzip) atau 14.641 (brotli). Berlaku untuk semua rute, bukan cuma
+  pencarian. Berkas yang sudah termampat (PNG) sengaja dilewati.
+- **Halaman digambar lebih dulu**, bukunya menyusul di belakangnya, masing-
+  masing memperluas pencarian saat mendarat, dengan baris "12/23 bahasa siap
+  dicari". Urutan unduhnya didahulukan pada bahasa yang sedang dipelajari.
+
+### 7. Penyeimbang jilid (baru 2 dari 21 bahasa)
+
+`es` dan `fr` naik 144 → **168 lema**, mengikuti bentuk `en`/`ko`: +4 per tahap
+CEFR. Sisanya 19 bahasa **belum** — lihat "BESOK MULAI DARI SINI" di paling
+atas. Kerangka maknanya sengaja dibuat sama untuk semua bahasa supaya jilidnya
+sejajar, dan skrip penyisipnya menolak lema kembar serta memperbarui hitungan
+`n` di `js/lexicon.js` sekaligus, sehingga indeks dan isi tak bisa berselisih.
+
+### Angka
+
+`npm test` → **155 hijau** (dari 126): +8 uji suara, +6 uji ujian akhir & soal,
++7 uji daftar kata, +1 uji cetak sertifikat, +1 uji pencarian bertahap, +1 uji
+kompresi. SW `jb-v3.3.0` → **`jb-v3.4.0`**.
+
+**Pelajaran sesi ini, lagi:** 126 tes hijau tidak menemukan satu pun dari enam
+bug di atas. Yang menemukannya adalah **mencetak PDF-nya lalu melihatnya**, dan
+menulis tes yang mengendalikan daftar suara alih-alih memercayai mesin sendiri.
+
+---
+
+*Diperbarui — v3.4 2026-08-04 (cetak sertifikat diperbaiki, penanda suara,
+ujian akhir lintas tahap, daftar kata sendiri, kompresi + pencarian bertahap;
+29 tes baru; 6 bug nyata ditutup).*

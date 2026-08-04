@@ -80,6 +80,7 @@ export function vocabHTML(c, it, key, faved) {
         ${it.ex ? `<div class="vocab__ex">“${esc(it.ex.t)}” — ${esc(mean(it.ex.m))}</div>` : ""}
       </div>
       ${key ? `<button class="favbtn ${faved ? "on" : ""}" data-fav="${esc(key)}" aria-label="${esc(t("fav.toggle"))}" aria-pressed="${faved ? "true" : "false"}">${faved ? "★" : "☆"}</button>` : ""}
+      ${key ? `<button class="listbtn" data-addlist="${esc(key)}" data-addlabel="${esc(it.term)}" aria-label="${esc(t("lists.addTo"))}">🗂️</button>` : ""}
       <button class="speakbtn" data-speak="${esc(it.term)}" aria-label="${esc(t("lesson.flashcards"))}">🔊</button>
     </div>`;
 }

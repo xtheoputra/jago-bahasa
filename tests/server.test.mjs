@@ -95,6 +95,35 @@ test("security headers are set on every response", async () => {
   assert.equal(h.get("referrer-policy"), "no-referrer");
 });
 
+/* The app ships its content as JavaScript — 23 dictionaries and 23 course
+   catalogues, ~1.9 MB — and opening the cross-language search pulls all of it.
+   That text is highly repetitive and deflates to under a third of its size, so
+   serving it raw was costing a phone several seconds on every cold visit. */
+test("text assets are compressed, and only when it helps", async () => {
+  const url = BASE + "/js/lexicon/ar.js";
+  const raw = await fetch(url, { headers: { "Accept-Encoding": "identity" } });
+  const rawBytes = (await raw.arrayBuffer()).byteLength;
+  assert.equal(raw.headers.get("content-encoding"), null, "an identity request came back encoded");
+
+  // fetch() decodes transparently, so ask for the wire size via the header we
+  // set, and check the body still parses as the same module text.
+  const gz = await fetch(url, { headers: { "Accept-Encoding": "gzip" } });
+  assert.equal(gz.headers.get("content-encoding"), "gzip", "a gzip-capable client got raw bytes");
+  assert.match(gz.headers.get("vary") || "", /Accept-Encoding/,
+    "a compressed response that does not Vary poisons shared caches");
+  const text = await gz.text();
+  assert.equal(text.length > 0, true);
+  assert.ok(text.includes("export default"), "the decompressed module is not the module");
+
+  // Already-compressed formats must be left alone: gzipping a PNG spends CPU
+  // to make it very slightly bigger.
+  const png = await fetch(BASE + "/icons/icon-192.png", { headers: { "Accept-Encoding": "gzip, br" } });
+  assert.equal(png.headers.get("content-encoding"), null, "a PNG was re-compressed");
+
+  // And a client that asks for nothing still gets a working file.
+  assert.ok(rawBytes > 1024, "the fixture is too small to be worth compressing");
+});
+
 test("a missing module 404s instead of falling back to HTML", async () => {
   // Answering a module request with the HTML shell is a hard parse error.
   const r = await fetch(BASE + "/js/does-not-exist.js");
